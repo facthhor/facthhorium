@@ -1,0 +1,4 @@
+/logs/
+/tokenizer.json
+/parameter/*.gguf
+/__pycache__/

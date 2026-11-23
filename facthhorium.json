@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "inkling-2-facthhorium",
+    "name": "Inkling 2 Facthhorium"
+  },
+  "programs": {
+    "source": {
+      "inputs": [
+        {
+          "path": "program/prepare.loom",
+          "data": [
+            "weights.loom",
+            "llm_config.json"
+          ]
+        },
+        "program/control.loom",
+        "program/storage.loom",
+        "program/service.loom",
+        "program/vision_prepare.loom",
+        "program/vision_control.loom"
+      ],
+      "libraries": [
+        "program/llm.loom",
+        "program/vision_stages.loom",
+        "program/vision_encoder.loom"
+      ]
+    }
+  },
+  "services": {
+    "chat": {
+      "kind": "text",
+      "version": 1,
+      "components": {
+        "image": {
+          "version": 1
+        }
+      }
+    }
+  },
+  "variants": {
+    "gguf": {
+      "services": {
+        "chat": {
+          "programs": [
+            "source"
+          ],
+          "config": {
+            "llm.card": true,
+            "llm.logits": false
+          },
+          "parameters": {
+            "model": {
+              "files": [
+                {
+                  "path": "parameter/Inkling-2-Mini-UD-Q4_K_M.gguf",
+                  "format": "gguf"
+                }
+              ]
+            },
+            "vision": {
+              "files": [
+                {
+                  "path": "parameter/mmproj-F16.gguf",
+                  "format": "gguf"
+                }
+              ]
+            }
+          },
+          "tokenizers": {
+            "text": "tokenizer.json"
+          }
+        }
+      }
+    }
+  },
+  "presets": {
+    "chat": {
+      "service": "chat",
+      "variant": "gguf",
+      "programs": "source",
+      "execution": {
+        "rows": 1,
+        "context_capacity": 204800,
+        "prefill_capacity": 512,
+        "max_tokens": 4096
+      }
+    }
+  }
+}

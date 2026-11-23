@@ -7,6 +7,12 @@ Facthhorium runs Inkling 2 Mini on AMD GPUs with Loom. This version uses the UD-
 - The tool parser skips the argument body until a call is complete. The HTTP relay sends a keepalive every 15 seconds of silence and reports interrupted streams without replaying partial tool calls.
 - The vision path accepts images using the Inkling FP16 projector.
 
+## Computer use
+
+Each chat request can contain up to 16 images across its message history. Each image can be up to 1 MiB compressed, with a maximum width or height of 4,096 pixels. The HTTP request limit is 32 MiB.
+
+For long rati0 computer-use sessions, load the included Pi extension (`pi -e ./pi/facthhorium-images.ts`). When a request would exceed 16 images, it replaces the oldest historical observation images with text markers in the outgoing request. It preserves the saved session, user attachments and the current batch of tool results. If those images alone exceed the limit, split them across requests.
+
 ## Setup
 
 On Linux, install `libseccomp.so.2`, then install the runtime with `pipx install "hrx-loom[hf]==0.2.0"` using the [pinned hrx-system source](https://github.com/ROCm/hrx-system/tree/e9cc3017765171611afe609cb92744602cf7cace). This package provides `loom-serve`; put it on your `PATH`. From the repository root, fetch the tokenizer and model files.

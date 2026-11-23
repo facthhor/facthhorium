@@ -44,6 +44,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 _SPEED = {"base": 0.0, "task": 0}
 
 
+REQUEST_BODY_BYTES = 32 * 1024 * 1024
 SSE_KEEPALIVE_SECONDS = 15
 
 
@@ -142,12 +143,13 @@ def log_upstream_error(status, body):
         error = payload.get("error", payload) if isinstance(payload, dict) else {}
         if isinstance(error, dict):
             candidate = error.get("code") or error.get("type")
-            if candidate in ("invalid_request_error", "invalid_request", "server_error", "internal_error", "upstream_error", "context_length_exceeded"):
+            if candidate in ("invalid_request_error", "invalid_request", "server_error", "internal_error", "upstream_error", "context_length_exceeded",
+                             "INVALID_ARGUMENT", "OUT_OF_RANGE", "RESOURCE_EXHAUSTED", "INTERNAL", "UNAVAILABLE"):
                 code = candidate
             message = error.get("message", "")
             if isinstance(message, str):
                 text = message.lower()
-                if "image" in text and re.search(r"count|limit|maximum|max(?:imum)?|too many|more than|at most|up to|only|exceed", text):
+                if "image" in text and re.search(r"image (?:count|occurrences)|too many images|at most \d+ images", text):
                     reason = "image count limit"
                 elif "context" in text and re.search(r"limit|maximum|max|too long|exceed", text):
                     reason = "context limit"
@@ -290,7 +292,7 @@ async def relay(path, client_reader, client_writer):
                 await asyncio.gather(task, return_exceptions=True)
             return
         size = int(fields.get(b"content-length", b"0"))
-        if size < 0 or size > 8388608:
+        if size < 0 or size > REQUEST_BODY_BYTES:
             client_writer.write(b"HTTP/1.1 413 Payload Too Large\r\nConnection: close\r\nContent-Length: 0\r\n\r\n")
             await client_writer.drain()
             return
@@ -416,6 +418,7 @@ def exec_loom(path):
         "--model=" + MODEL_CARD,
         "--device=" + device,
         "--listen=unix:" + path,
+        f"--request_body_bytes={REQUEST_BODY_BYTES}",
         "--parameter_mode=file",
         "--weight_slab_bytes=64mib",
         "--state_slab_bytes=8mib",

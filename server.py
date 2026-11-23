@@ -34,7 +34,7 @@ LOG_PATH = str(LOG_DIR / "llama-server.log")
 # `except: pass`), so when Loom terminated a generation the reason was lost and
 # llama-swap only saw a bare "upstream disconnection". This file records why:
 # capacity/context errors, "terminated", and other fatal messages.
-LOOM_LOG_PATH = str(LOG_DIR / "loom-serve.log")
+LOOM_LOG_PATH = str(LOG_DIR / "facthhorium-loom-serve.log")
 
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -125,12 +125,35 @@ def warmup(path):
         response = connection.getresponse()
         result = json.load(response)
     if response.status != 200 or not result["choices"][0]["message"].get("content"):
-        raise RuntimeError(f"Loom warmup failed: {result}")
+        raise RuntimeError(f"Facthhorium warmup failed: {result}")
 
 
 def log_relay(message):
     with contextlib.suppress(OSError), open(LOG_PATH, "a", encoding="utf-8") as handle:
-        handle.write(f"relay: {message}\n")
+        handle.write(f"Facthhorium relay: {message}\n")
+
+
+def log_upstream_error(status, body):
+    """Log only recognized categories, never arbitrary upstream text."""
+    reason = "unspecified"
+    code = "unspecified"
+    try:
+        payload = json.loads(body)
+        error = payload.get("error", payload) if isinstance(payload, dict) else {}
+        if isinstance(error, dict):
+            candidate = error.get("code") or error.get("type")
+            if candidate in ("invalid_request_error", "invalid_request", "server_error", "internal_error", "upstream_error", "context_length_exceeded"):
+                code = candidate
+            message = error.get("message", "")
+            if isinstance(message, str):
+                text = message.lower()
+                if "image" in text and re.search(r"count|limit|maximum|max(?:imum)?|too many|more than|at most|up to|only|exceed", text):
+                    reason = "image count limit"
+                elif "context" in text and re.search(r"limit|maximum|max|too long|exceed", text):
+                    reason = "context limit"
+    except (ValueError, UnicodeError):
+        pass
+    log_relay(f"upstream chat HTTP {status}; reason={reason}; code={code}")
 
 
 async def close_writer(writer):
@@ -235,6 +258,8 @@ async def relay(path, client_reader, client_writer):
     wrote_response = False
     started = time.monotonic()
     timing = frames = None
+    error_status = None
+    error_body = bytearray()
     side = "client request"
     try:
         header = await client_reader.readuntil(b"\r\n\r\n")
@@ -292,6 +317,11 @@ async def relay(path, client_reader, client_writer):
         await client_writer.drain()
         resp_fields = {key.lower(): value.strip().lower() for line in response.split(b"\r\n")[1:]
                        if b":" in line for key, value in [line.split(b":", 1)]}
+        status_parts = response.split(b"\r\n", 1)[0].split()
+        if is_chat and len(status_parts) > 1 and status_parts[1].isdigit():
+            status = int(status_parts[1])
+            if 400 <= status <= 599:
+                error_status = status
         # Loom uses close-delimited, uncompressed SSE. Only that framing
         # permits insertion of SSE comment events without HTTP re-encoding.
         if (is_chat and resp_fields.get(b"content-type", b"").split(b";")[0] == b"text/event-stream"
@@ -315,6 +345,8 @@ async def relay(path, client_reader, client_writer):
                 if timing is not None and not timing.done:
                     raise EOFError("stream ended before [DONE]")
                 break
+            if error_status is not None and len(error_body) <= 65536:
+                error_body.extend(piece[:65537 - len(error_body)])
             side = "downstream write"
             if frames is not None:
                 await frames.forward(piece, client_writer, timing)
@@ -327,11 +359,14 @@ async def relay(path, client_reader, client_writer):
         log_relay(f"{side}: {type(exc).__name__} ({exc}); response_started={wrote_response}")
         with contextlib.suppress(OSError):
             if side.startswith("upstream") and not wrote_response:
-                client_writer.write(b"HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Length: 0\r\n\r\n")
+                body = b'{"error":{"message":"Facthhorium upstream connection failed","type":"upstream_error"}}'
+                client_writer.write(b"HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body)
             elif side == "upstream read" and timing and not timing.done:
-                client_writer.write(b'data: {"error":{"message":"Loom stream ended before completion","type":"upstream_error"}}\n\ndata: [DONE]\n\n')
+                client_writer.write(b'data: {"error":{"message":"Facthhorium stream ended before completion","type":"upstream_error"}}\n\ndata: [DONE]\n\n')
             await client_writer.drain()
     finally:
+        if error_status is not None:
+            log_upstream_error(error_status, error_body if len(error_body) <= 65536 else b"")
         if frames is not None:
             frames.pending.close()
         await close_writer(upstream)
@@ -408,19 +443,19 @@ async def serve(port, path):
             except (OSError, http.client.HTTPException):
                 status = {}
             if status.get("registration") == "failed":
-                raise RuntimeError(status.get("error", "Loom model preparation failed"))
+                raise RuntimeError(f"Facthhorium model preparation failed: {status.get('error', 'unknown error')}")
             if status.get("registration") == "ready":
                 break
             await asyncio.sleep(0.25)
         if exited.done():
-            raise RuntimeError(f"Loom exited during startup with status {exited.result()}")
+            raise RuntimeError(f"Facthhorium (Loom) exited during startup with status {exited.result()}")
         await asyncio.to_thread(warmup, path)
         await asyncio.to_thread(mark_run_start)
         server = await asyncio.start_server(lambda r, w: relay(path, r, w), "127.0.0.1", port)
         async with server:
             code = await asyncio.shield(exited)
         if code:
-            raise RuntimeError(f"Loom exited with status {code}")
+            raise RuntimeError(f"Facthhorium (Loom) exited with status {code}")
     finally:
         if process.returncode is None:
             with contextlib.suppress(ProcessLookupError):

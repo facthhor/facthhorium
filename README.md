@@ -29,6 +29,8 @@ Start the server on a loopback port (the caller, such as llama-swap, supplies th
 ./serve-facthhorium.sh 8080
 ```
 
+By default, logs are written to `logs/` beside the server. Set `FACTHHORIUM_LOG_DIR` to change the directory. Relay diagnostics and timing records use `llama-server.log`; Loom stderr uses `facthhorium-loom-serve.log`. For rati0’s speed card, set `FACTHHORIUM_LOG_DIR="$HOME/.local/share/ai-workspace/logs"` in the launcher environment.
+
 ## Benchmark
 
 The measured sweep covers input lengths from 64 through 32,768 tokens, with three requests per length; configured context is 204,800 tokens. Decode speed is measured between generated tokens. Release assets: [chart](https://github.com/facthhor/facthhorium/releases/download/v0.1/context-speed.png), [measurements CSV](https://github.com/facthhor/facthhorium/releases/download/v0.1/measurements.csv), and [method and settings](https://github.com/facthhor/facthhorium/releases/download/v0.1/method.md).

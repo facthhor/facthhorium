@@ -51,6 +51,19 @@ Measured on the same Z13 at temperature 1, top-k 0 and top-p 1, with 96 generate
 
 For single-token decode, the eight global attention passes can split the KV scan across 256 workgroups per KV head. Sliding-window attention and batched decode keep 64 splits. Each model pass retains its own KV history.
 
+## Long context and quality
+
+A second run compared the two versions on retrieval from Python source code, with four facts placed at 8%, 38%, 68% and 94% depth. Each row is the median of three requests (one greedy, two sampled at temperature 1, top-k 0, top-p 1) with maximum reasoning effort.
+
+| Input tokens | v0.1 tok/s | v0.2 tok/s | Facts found, both versions |
+|---:|---:|---:|---:|
+| 9,261 | 36.7 | 36.9 | 12/12 |
+| 36,694 | 29.1 | 30.4 | 16/16 |
+| 73,000 | 21.8 | 24.5 | 12/12 |
+| 142,855 | 13.5 | 18.0 | 12/12 |
+
+At the same sampling settings both versions solved 14 of 14 math problems with exact answers and 5 of 5 coding problems checked by unit tests. Below about 512 tokens of context they produce byte-identical output. Beyond that, v0.2 sums attention over more partial results, so rounding differs and long transcripts diverge. Both versions are deterministic. GPU memory peaked at 22.4 GiB with 142,855 input tokens. Each additional token of context adds 32 KiB of KV cache.
+
 ## External sources
 
 The Loom programs derive from [loom-fun/unsloth-Inkling-2-Mini-loom](https://huggingface.co/loom-fun/unsloth-Inkling-2-Mini-loom/tree/9b1eedd839ec3d648031f81256fd5fcdd4cf6c10). Runtime `hrx-loom` is an external dependency from [ROCm/hrx-system](https://github.com/ROCm/hrx-system/tree/e9cc3017765171611afe609cb92744602cf7cace). Program generation used [loom-fun/loom-skills](https://github.com/loom-fun/loom-skills/tree/618f89e134ea7bdc579f01f2d1825622df12912d). See `licenses/` for notices.

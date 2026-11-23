@@ -31,9 +31,7 @@ Start the server on a loopback port (the caller, such as llama-swap, supplies th
 
 ## Benchmark
 
-The measured sweep covers input lengths from 64 through 32,768 tokens, with three requests per length; configured context is 204,800 tokens. Decode speed is measured between generated tokens. See [measurements](measurements.csv) and the [method and settings](method.md).
-
-![Decode speed by input context](context-speed.png)
+The measured sweep covers input lengths from 64 through 32,768 tokens, with three requests per length; configured context is 204,800 tokens. Decode speed is measured between generated tokens. Release assets: [chart](https://github.com/facthhor/facthhorium/releases/download/v0.1/context-speed.png), [measurements CSV](https://github.com/facthhor/facthhorium/releases/download/v0.1/measurements.csv), and [method and settings](https://github.com/facthhor/facthhorium/releases/download/v0.1/method.md).
 
 ## External sources
 

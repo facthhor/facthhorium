@@ -11,7 +11,7 @@ Facthhorium runs Inkling 2 Mini on AMD GPUs with Loom. This version uses the UD-
 
 Each chat request can contain up to 16 images across its message history. Each image can be up to 1 MiB compressed, with a maximum width or height of 4,096 pixels. The HTTP request limit is 32 MiB.
 
-For long rati0 computer-use sessions, load the included Pi extension (`pi -e ./pi/facthhorium-images.ts`). When a request would exceed 16 images, it replaces the oldest historical observation images with text markers in the outgoing request. It preserves the saved session, user attachments and the current batch of tool results. If those images alone exceed the limit, split them across requests.
+For long rati0 computer-use sessions, load the included Pi extension (`pi -e ./pi/facthhorium-images.ts`). When a request would exceed 16 images, it replaces the oldest historical observation images with text markers in the outgoing request, 8 at a time, so 8 to 15 images remain. Between those batch trims the earlier request stays byte-identical, so Loom's prefix cache keeps serving it instead of reprocessing the whole conversation on every action. It preserves the saved session, user attachments and the current batch of tool results. If those images alone exceed the limit, split them across requests.
 
 ## Setup
 

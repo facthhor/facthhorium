@@ -37,9 +37,19 @@ Start the server on a loopback port (the caller, such as llama-swap, supplies th
 
 By default, logs are written to `logs/` beside the server. Set `FACTHHORIUM_LOG_DIR` to change the directory. Relay diagnostics and timing records use `llama-server.log`; Loom stderr uses `facthhorium-loom-serve.log`. For rati0’s speed card, set `FACTHHORIUM_LOG_DIR="$HOME/.local/share/ai-workspace/logs"` in the launcher environment.
 
-## Benchmark
+## Decode speed
 
-The measured sweep covers input lengths from 64 through 32,768 tokens, with three requests per length; configured context is 204,800 tokens. Decode speed is measured between generated tokens. Release assets: [chart](https://github.com/facthhor/facthhorium/releases/download/v0.1/context-speed.png), [measurements CSV](https://github.com/facthhor/facthhorium/releases/download/v0.1/measurements.csv), and [method and settings](https://github.com/facthhor/facthhorium/releases/download/v0.1/method.md).
+Measured on the same Z13 at temperature 1, top-k 0 and top-p 1, with 96 generated tokens. Times exclude prefill. The short rows are medians of three requests. Each longer row is one request per version.
+
+| Input tokens | v0.1 tok/s | v0.2 tok/s |
+|---:|---:|---:|
+| 71 | 45.5 | 45.4 |
+| 4,103 | 40.1 | 39.8 |
+| 16,391 | 36.0 | 36.1 |
+| 32,775 | 29.0 | 31.9 |
+| 65,543 | 21.2 | 25.6 |
+
+For single-token decode, the eight global attention passes can split the KV scan across 256 workgroups per KV head. Sliding-window attention and batched decode keep 64 splits. Each model pass retains its own KV history.
 
 ## External sources
 

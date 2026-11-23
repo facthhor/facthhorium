@@ -15338,7 +15338,10 @@ kernel.def export("g_ink_kv_prep_store") @g_ink_kv_prep_store(%tokens: index) {
 kernel.def export("g_ink_attn_split") @g_ink_attn_split(%tokens: index) {
   %c1 = index.constant 1 : index
   %cKH = index.constant 8 : index
-  %cS = index.constant 64 : index
+  %normal_splits = index.constant 64 : index
+  %wide_splits = index.constant 256 : index
+  %one_token = index.cmp eq, %tokens, %c1 : index
+  %cS = scf.select %one_token, %wide_splits, %normal_splits : index
   %lanes = index.constant 96 : index
   kernel.launch.config workgroups(%tokens, %cKH, %cS) workgroup_size(%lanes, %c1, %c1) : index
 } launch(%tokens_arg: index, %blocks_arg: index, %pool_arg: index, %layer_arg: index, %sliding_arg: i32, %info: buffer, %origins: buffer, %q_in: buffer, %r_in: buffer, %rel_bias: buffer, %arena: buffer, %pm: buffer, %pl: buffer, %po: buffer) {
@@ -15351,7 +15354,6 @@ kernel.def export("g_ink_attn_split") @g_ink_attn_split(%tokens: index) {
   %kh_id = kernel.workgroup.id<y> : index
   %kh = index.assume %kh_id [range(%kh_id, 0, 7)] : index
   %sp_id = kernel.workgroup.id<z> : index
-  %sp = index.assume %sp_id [range(%sp_id, 0, 63)] : index
   %wave_raw = kernel.subgroup.id : index
   %wave = index.assume %wave_raw [range(%wave_raw, 0, 2)] : index
   %lane_raw = kernel.subgroup.lane.id : index
@@ -15360,7 +15362,11 @@ kernel.def export("g_ink_attn_split") @g_ink_attn_split(%tokens: index) {
   %c1 = index.constant 1 : index
   %c2 = index.constant 2 : index
   %cG = index.constant 3 : index
-  %cS = index.constant 64 : index
+  %normal_splits = index.constant 64 : index
+  %wide_splits = index.constant 256 : index
+  %one_token = index.cmp eq, %tokens, %c1 : index
+  %cS = scf.select %one_token, %wide_splits, %normal_splits : index
+  %sp = index.assume %sp_id [range(%sp_id, 0, 255), lt(%sp_id, %cS)] : index
   %cEXT = index.constant 1024 : index
   %cWIN1 = index.constant 1023 : index
   %zero = index.constant 0 : offset
@@ -15376,9 +15382,9 @@ kernel.def export("g_ink_attn_split") @g_ink_attn_split(%tokens: index) {
   %info_v = buffer.view %info[%zero] : buffer -> view<[%tokens]x4xi32>
   %live32 = view.load %info_v[%tok, 2] : view<[%tokens]x4xi32> -> i32
   %live = scalar.cmpi ne, %live32, %c0_i32 : i32
-  %pm_v = buffer.view %pm[%zero] : buffer -> view<[%tokens]x24x64xf32>
-  %pl_v = buffer.view %pl[%zero] : buffer -> view<[%tokens]x24x64xf32>
-  %po_v = buffer.view %po[%zero] : buffer -> view<[%tokens]x24x64x32x4xf32>
+  %pm_v = buffer.view %pm[%zero] : buffer -> view<[%tokens]x24x[%cS]xf32>
+  %pl_v = buffer.view %pl[%zero] : buffer -> view<[%tokens]x24x[%cS]xf32>
+  %po_v = buffer.view %po[%zero] : buffer -> view<[%tokens]x24x[%cS]x32x4xf32>
   %is_l0 = index.cmp eq, %lane, %c0 : index
   scf.if %live {
     %row32 = view.load %info_v[%tok, 0] : view<[%tokens]x4xi32> -> i32
@@ -15399,19 +15405,19 @@ kernel.def export("g_ink_attn_split") @g_ink_attn_split(%tokens: index) {
     %n_keys_0 = index.sub %pos, %w_low : index
     %n_keys_raw = index.add %n_keys_0, %c1 : index
     %n_keys = index.assume %n_keys_raw [range(%n_keys_raw, 1, 2097152)] : index
-    // Adaptive splits: s_eff = min(S, ceil(n_keys / 8)); splits >= s_eff exit immediately!
+    // Active splits are bounded by the key count; unused groups exit.
     %c7 = index.constant 7 : index
     %c8 = index.constant 8 : index
     %nk7 = index.add %n_keys, %c7 : index
     %nk7_b = index.assume %nk7 [range(%nk7, 8, 2097159)] : index
     %s_need = index.div %nk7_b, %c8 : index
     %s_eff0 = index.min %s_need, %cS : index
-    %s_eff = index.assume %s_eff0 [range(%s_eff0, 1, 64)] : index
+    %s_eff = index.assume %s_eff0 [range(%s_eff0, 1, 256)] : index
     %sp_active = index.cmp ult, %sp, %s_eff : index
     scf.if %sp_active {
       %chunk0 = index.add %n_keys, %s_eff : index
       %chunk1_raw = index.sub %chunk0, %c1 : index
-      %chunk1 = index.assume %chunk1_raw [range(%chunk1_raw, 1, 2097216)] : index
+      %chunk1 = index.assume %chunk1_raw [range(%chunk1_raw, 1, 2097408)] : index
       %chunk = index.div %chunk1, %s_eff : index
       %st0 = index.mul %sp, %chunk : index
       %st = index.min %st0, %n_keys : index
@@ -15522,10 +15528,10 @@ kernel.def export("g_ink_attn_split") @g_ink_attn_split(%tokens: index) {
         scf.yield %neg_inf, %zero_f, %zero4 : f32, f32, vector<4xf32>
       }
       scf.if %is_l0 {
-        view.store %mf, %pm_v[%tok, %hd, %sp] : f32, view<[%tokens]x24x64xf32>
-        view.store %lf, %pl_v[%tok, %hd, %sp] : f32, view<[%tokens]x24x64xf32>
+        view.store %mf, %pm_v[%tok, %hd, %sp] : f32, view<[%tokens]x24x[%cS]xf32>
+        view.store %lf, %pl_v[%tok, %hd, %sp] : f32, view<[%tokens]x24x[%cS]xf32>
       }
-      vector.store %af, %po_v[%tok, %hd, %sp, %lane, %c0] : vector<4xf32>, view<[%tokens]x24x64x32x4xf32>
+      vector.store %af, %po_v[%tok, %hd, %sp, %lane, %c0] : vector<4xf32>, view<[%tokens]x24x[%cS]x32x4xf32>
     }
   }
   kernel.return
@@ -15548,7 +15554,8 @@ kernel.def export("g_ink_attn_combine") @g_ink_attn_combine(%tokens: index) {
   %c1 = index.constant 1 : index
   %c7 = index.constant 7 : index
   %c8 = index.constant 8 : index
-  %cS = index.constant 64 : index
+  %normal_splits = index.constant 64 : index
+  %wide_splits = index.constant 256 : index
   %cWIN1 = index.constant 1023 : index
   %zero = index.constant 0 : offset
   %c0_i32 = scalar.constant 0 : i32
@@ -15580,6 +15587,10 @@ kernel.def export("g_ink_attn_combine") @g_ink_attn_combine(%tokens: index) {
     %pos_b = scalar.assume %pos32 [range(%pos32, 0, 2097151)] : i32
     %pos = index.cast %pos_b : i32 to index
     %is_swa = scalar.cmpi ne, %sliding_arg, %c0_i32 : i32
+    %global_layer = scalar.cmpi eq, %sliding_arg, %c0_i32 : i32
+    %one_token = index.cmp eq, %tokens, %c1 : index
+    %wide = scalar.andi %one_token, %global_layer : i1
+    %cS = scf.select %wide, %wide_splits, %normal_splits : index
     %w_low = scf.if %is_swa -> (index) {
       %gt = index.cmp ugt, %pos, %cWIN1 : index
       %sub = index.sub %pos, %cWIN1 : index
@@ -15595,30 +15606,33 @@ kernel.def export("g_ink_attn_combine") @g_ink_attn_combine(%tokens: index) {
     %nk7_b = index.assume %nk7 [range(%nk7, 8, 2097159)] : index
     %s_need = index.div %nk7_b, %c8 : index
     %s_eff0 = index.min %s_need, %cS : index
-    %s_eff = index.assume %s_eff0 [range(%s_eff0, 1, 64)] : index
-    %pm_v = buffer.view %pm[%zero] : buffer -> view<[%tokens]x24x64xf32>
-    %pl_v = buffer.view %pl[%zero] : buffer -> view<[%tokens]x24x64xf32>
-    %po_v = buffer.view %po[%zero] : buffer -> view<[%tokens]x24x64x32x4xf32>
+    %s_eff = index.assume %s_eff0 [range(%s_eff0, 1, 256)] : index
+    %pm_v = buffer.view %pm[%zero] : buffer -> view<[%tokens]x24x[%cS]xf32>
+    %pl_v = buffer.view %pl[%zero] : buffer -> view<[%tokens]x24x[%cS]xf32>
+    %po_v = buffer.view %po[%zero] : buffer -> view<[%tokens]x24x[%cS]x32x4xf32>
     %sv = buffer.view %sinks[%zero] : buffer -> view<[%tokens]x24xf32>
     %gv = buffer.view %gate[%zero] : buffer -> view<[%tokens]x24x32x4xf32>
     %sink = view.load %sv[%tok, %hd] : view<[%tokens]x24xf32> -> f32
     %warp = index.constant 32 : index
     %last_split = index.sub %s_eff, %c1 : index
     %lo_id = index.min %lane, %last_split : index
-    %hi0 = index.add %lane, %warp : index
-    %hi_id = index.min %hi0, %last_split : index
-    %lo = view.load %pm_v[%tok, %hd, %lo_id] : view<[%tokens]x24x64xf32> -> f32
-    %hi = view.load %pm_v[%tok, %hd, %hi_id] : view<[%tokens]x24x64xf32> -> f32
-    %pair_max = scalar.maxnumf %lo, %hi : f32
+    %first = view.load %pm_v[%tok, %hd, %lo_id] : view<[%tokens]x24x[%cS]xf32> -> f32
+    %pair_max = scf.for %step = [%warp to %s_eff step %warp](%prev = %first : f32) -> (f32) {
+      %slot = index.add %step, %lane : index
+      %active_slot = index.min %slot, %last_split : index
+      %next = view.load %pm_v[%tok, %hd, %active_slot] : view<[%tokens]x24x[%cS]xf32> -> f32
+      %best = scalar.maxnumf %prev, %next : f32
+      scf.yield %best : f32
+    }
     %split_max = kernel.subgroup.reduce<maxnumf> %pair_max : f32
     %mx = scalar.maxnumf %sink, %split_max : f32
     %s_sh = scalar.subf %sink, %mx : f32
     %d0 = scalar.expf<afn> %s_sh : f32
     %df, %af = scf.for %s = [%c0 to %s_eff step %c1](%d = %d0 : f32, %a = %zero4 : vector<4xf32>) -> (f32, vector<4xf32>) {
-      %sb = index.assume %s [range(%s, 0, 63)] : index
-      %ms = view.load %pm_v[%tok, %hd, %sb] : view<[%tokens]x24x64xf32> -> f32
-      %ls = view.load %pl_v[%tok, %hd, %sb] : view<[%tokens]x24x64xf32> -> f32
-      %os = vector.load %po_v[%tok, %hd, %sb, %lane, %c0] : view<[%tokens]x24x64x32x4xf32> -> vector<4xf32>
+      %sb = index.assume %s [range(%s, 0, 255), lt(%s, %cS)] : index
+      %ms = view.load %pm_v[%tok, %hd, %sb] : view<[%tokens]x24x[%cS]xf32> -> f32
+      %ls = view.load %pl_v[%tok, %hd, %sb] : view<[%tokens]x24x[%cS]xf32> -> f32
+      %os = vector.load %po_v[%tok, %hd, %sb, %lane, %c0] : view<[%tokens]x24x[%cS]x32x4xf32> -> vector<4xf32>
       %sh = scalar.subf %ms, %mx : f32
       %w = scalar.expf<afn> %sh : f32
       %nd = scalar.fmaf %ls, %w, %d : f32
@@ -33812,12 +33826,17 @@ command.def public target(@device) @llm_advance() launch(%weights: buffer, %resi
   %dyn_v = buffer.alloca<global> align(256) %dyn_size : buffer
   // Decode split-K scratch (only sized for t < 64; 1 token dummy on prefill!)
   %t_dec = scf.select %gemm, %c1, %t : index
+  // The wide global scan only runs at t=1. Reserve four normal rows in
+  // that case, leaving batch and prefill scratch footprints unchanged.
+  %wide_decode = index.cmp eq, %t, %c1 : index
+  %wide_rows = index.constant 4 : index
+  %partial_rows = scf.select %wide_decode, %wide_rows, %t_dec : index
   %pm_bytes = index.constant 6144 : offset
-  %pm_size = index.scale %t_dec, %pm_bytes : index, offset -> offset
+  %pm_size = index.scale %partial_rows, %pm_bytes : index, offset -> offset
   %pm = buffer.alloca<global> align(256) %pm_size : buffer
   %pl = buffer.alloca<global> align(256) %pm_size : buffer
   %po_bytes = index.constant 786432 : offset
-  %po_size = index.scale %t_dec, %po_bytes : index, offset -> offset
+  %po_size = index.scale %partial_rows, %po_bytes : index, offset -> offset
   %po = buffer.alloca<global> align(256) %po_size : buffer
   // Prefill flash2 tile list & 16-split listed fallback scratch (sized for t on prefill, 1 on decode)
   %t_pre = scf.select %gemm, %t, %c1 : index

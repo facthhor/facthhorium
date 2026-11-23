@@ -9,7 +9,7 @@ Facthhorium runs Inkling 2 Mini on AMD GPUs with Loom. This version uses the UD-
 
 ## Setup
 
-On Linux, install `libseccomp.so.2` and `hrx-loom==0.2.0`, then put `loom-serve` on your `PATH`. From the repository root, fetch the tokenizer and model files.
+On Linux, install `libseccomp.so.2`, then install the runtime with `pipx install "hrx-loom[hf]==0.2.0"` using the [pinned hrx-system source](https://github.com/ROCm/hrx-system/tree/e9cc3017765171611afe609cb92744602cf7cace). This package provides `loom-serve`; put it on your `PATH`. From the repository root, fetch the tokenizer and model files.
 
 ```sh
 curl -fL 'https://huggingface.co/loom-fun/unsloth-Inkling-2-Mini-loom/resolve/9b1eedd839ec3d648031f81256fd5fcdd4cf6c10/tokenizer.json' -o tokenizer.json
@@ -31,7 +31,7 @@ Start the server on a loopback port (the caller, such as llama-swap, supplies th
 
 ## Benchmark
 
-Decode speed on the Z13, measured between generated tokens. [Measurements](measurements.csv) · [Method](method.md)
+The measured sweep covers input lengths from 64 through 32,768 tokens, with three requests per length; configured context is 204,800 tokens. Decode speed is measured between generated tokens. See [measurements](measurements.csv) and the [method and settings](method.md).
 
 ![Decode speed by input context](context-speed.png)
 

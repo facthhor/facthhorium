@@ -3812,6 +3812,62 @@ func.def public @output_next(%response: buffer, %previous: i64, %state: i64, %ph
   func.return %kind, %previous, %end, %next : i64, i64, i64, i64
 }
 
+// End of the first complete JSON object or array in [begin, end). A generated tool
+// call can carry stray bytes after its JSON (an extra brace, a second object); the
+// strict members parser rejects those and fails the whole turn. Strings and escapes
+// are tracked so braces inside them do not count. Unbalanced input returns end, so
+// the strict parser still reports it.
+func.def @json_value_end(%text: buffer, %begin: offset, %end: offset) -> (offset) {
+  %c1 = index.constant 1 : offset
+  %zero = scalar.constant 0 : i32
+  %one = scalar.constant 1 : i32
+  %minus_one = scalar.constant -1 : i32
+  %false = scalar.constant false : i1
+  %true = scalar.constant true : i1
+  %quote = scalar.constant 34 : i32
+  %backslash = scalar.constant 92 : i32
+  %open_brace = scalar.constant 123 : i32
+  %close_brace = scalar.constant 125 : i32
+  %open_bracket = scalar.constant 91 : i32
+  %close_bracket = scalar.constant 93 : i32
+  %stop, %depth_out, %string_out, %escape_out, %done = scf.while(%position = %begin : offset, %depth = %zero : i32, %in_string = %false : i1, %escaped = %false : i1, %finished = %false : i1) -> (offset, i32, i1, i1, i1) {
+    %inside = index.cmp ult, %position, %end : offset
+    %open = scalar.xori %finished, %true : i1
+    %go = scalar.andi %inside, %open : i1
+    scf.condition %go, %position, %depth, %in_string, %escaped, %finished : i1, offset, i32, i1, i1, i1
+  } do(%position: offset, %depth: i32, %in_string: i1, %escaped: i1, %finished: i1) {
+    %byte = buffer.load.i8.u %text[%position]
+    %is_quote = scalar.cmpi eq, %byte, %quote : i32
+    %is_backslash = scalar.cmpi eq, %byte, %backslash : i32
+    %is_open_brace = scalar.cmpi eq, %byte, %open_brace : i32
+    %is_open_bracket = scalar.cmpi eq, %byte, %open_bracket : i32
+    %is_close_brace = scalar.cmpi eq, %byte, %close_brace : i32
+    %is_close_bracket = scalar.cmpi eq, %byte, %close_bracket : i32
+    %opens = scalar.ori %is_open_brace, %is_open_bracket : i1
+    %closes = scalar.ori %is_close_brace, %is_close_bracket : i1
+    %plain = scalar.xori %escaped, %true : i1
+    %live = scalar.andi %in_string, %plain : i1
+    %escape_next = scalar.andi %live, %is_backslash : i1
+    %string_ends = scalar.andi %live, %is_quote : i1
+    %structural = scalar.xori %in_string, %true : i1
+    %string_starts = scalar.andi %structural, %is_quote : i1
+    %kept = scf.select %string_ends, %false, %in_string : i1
+    %next_string = scf.select %string_starts, %true, %kept : i1
+    %do_open = scalar.andi %structural, %opens : i1
+    %do_close = scalar.andi %structural, %closes : i1
+    %step_open = scf.select %do_open, %one, %zero : i32
+    %step_close = scf.select %do_close, %minus_one, %zero : i32
+    %depth_open = scalar.addi %depth, %step_open : i32
+    %next_depth = scalar.addi %depth_open, %step_close : i32
+    %at_top = scalar.cmpi eq, %next_depth, %zero : i32
+    %closed = scalar.andi %do_close, %at_top : i1
+    %next = index.add %position, %c1 : offset
+    scf.yield %next, %next_depth, %next_string, %escape_next, %closed : offset, i32, i1, i1, i1
+  }
+  %result = scf.select %done, %stop, %end : offset
+  func.return %result : offset
+}
+
 // Parse one or more <|message_model|><name><|content_invoke_tool_json|>{"name":...,"args":{...}}<|end_message|>
 // blocks into OpenAI tool_calls JSON array:
 // [{"type":"function","function":{"name":"...","arguments":"<json string>"}}]
@@ -3871,7 +3927,8 @@ func.def public @parse_tools(%schemas: buffer, %response: buffer, %truncated: i6
       %e_first = index.cmp ule, %end_p, %next_m : offset
       %raw_end = scf.select %e_first, %end_p, %next_m : offset
       %jb = func.call @skip_space(%response, %body_b, %raw_end) : (buffer, offset, offset) -> (offset)
-      %je = func.call @trim_end(%response, %jb, %raw_end) : (buffer, offset, offset) -> (offset)
+      %je_text = func.call @trim_end(%response, %jb, %raw_end) : (buffer, offset, offset) -> (offset)
+      %je = func.call @json_value_end(%response, %jb, %je_text) : (buffer, offset, offset) -> (offset)
       %jl = index.sub %je, %jb : offset
       %jb64 = index.cast %jb : offset to i64
       %jl64 = index.cast %jl : offset to i64

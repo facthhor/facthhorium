@@ -20,9 +20,36 @@ ROOT = Path(__file__).resolve().parent
 MODEL_ID = os.environ.get("RATI0_LOOM_MODEL_ID", "inkling-2-full")
 MODEL_CARD = str(ROOT / "facthhorium.json")
 
+def card_run_tags(card_path):
+    """The target GGUF name and drafter tag from the model card, for the run header."""
+    weights, drafter = "Inkling-2-Mini.gguf", "none"
+    with contextlib.suppress(OSError, ValueError, KeyError, TypeError):
+        card = json.loads(Path(card_path).read_text(encoding="utf-8"))
+        found = []
+
+        def walk(node):
+            if isinstance(node, dict):
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    walk(value)
+            elif isinstance(node, str) and node.endswith(".gguf"):
+                found.append(Path(node).name)
+
+        walk(card)
+        targets = [name for name in found if not name.startswith(("mmproj", "dspark"))]
+        if targets:
+            weights = targets[0]
+        depth = int(card["presets"]["chat"]["execution"].get("draft_depth", 0))
+        if depth > 0 and any(name.startswith("dspark") for name in found):
+            drafter = f"dspark-d{depth}"
+    return weights, drafter
+
+
 # The weights' real path, so llama_log.rs names the model the way it names a
-# llama.cpp run: its `-m` stem, Inkling-2-Mini-UD-Q4_K_M.
-WEIGHTS = "Inkling-2-Mini-UD-Q4_K_M.gguf"
+# llama.cpp run: its `-m` stem, read from the card (Inkling-2-Mini-UD-Q4_K_XL).
+WEIGHTS, DRAFTER = card_run_tags(MODEL_CARD)
 
 # rati0's decode-speed card reads llama-server.log. Loom does not write it, so
 # the relay appends one request's timing there per completion, in llama.cpp's
@@ -84,7 +111,7 @@ def mark_run_start():
     iso = datetime.now().astimezone().isoformat(timespec="seconds")
     header = (
         f"\n===== {iso}  start: -m {WEIGHTS} =====\n"
-        "===== engine=facthhorium@loom drafter=none =====\n"
+        f"===== engine=facthhorium@loom drafter={DRAFTER} =====\n"
     )
     with contextlib.suppress(OSError):
         with open(LOG_PATH, "a", encoding="utf-8") as handle:

@@ -11,6 +11,7 @@
           "path": "program/prepare.loom",
           "data": [
             "weights.loom",
+            "head_weights.loom",
             "llm_config.json"
           ]
         },
@@ -53,8 +54,9 @@
             "model": {
               "files": [
                 {
-                  "path": "parameter/Inkling-2-Mini-UD-Q4_K_M.gguf",
-                  "format": "gguf"
+                  "path": "parameter/Inkling-2-Mini-UD-Q4_K_XL.gguf",
+                  "format": "gguf",
+                  "origin": "@checkpoint/Inkling-2-Mini-UD-Q4_K_XL.gguf"
                 }
               ]
             },
@@ -63,6 +65,15 @@
                 {
                   "path": "parameter/mmproj-F16.gguf",
                   "format": "gguf"
+                }
+              ]
+            },
+            "draft": {
+              "files": [
+                {
+                  "path": "parameter/dspark-Inkling-2-Mini-Q8_0.gguf",
+                  "format": "gguf",
+                  "origin": "@checkpoint/dspark-Inkling-2-Mini-Q8_0.gguf"
                 }
               ]
             }
@@ -81,10 +92,18 @@
       "programs": "source",
       "execution": {
         "rows": 1,
-        "context_capacity": 204800,
-        "prefill_capacity": 512,
-        "max_tokens": 4096
+        "context_capacity": 131072,
+        "prefill_capacity": 4096,
+        "max_tokens": 4096,
+        "draft_depth": 3
       }
+    }
+  },
+  "origins": {
+    "checkpoint": {
+      "kind": "hf",
+      "repository": "unsloth/Inkling-2-Mini-GGUF",
+      "revision": "ea0c79b2ecd73669e774c8519b79bfabfddbc027"
     }
   }
 }

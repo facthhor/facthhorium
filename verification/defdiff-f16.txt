@@ -1,0 +1,35 @@
+== control.loom
+  changed parse_f64                        IDENTICAL
+  changed request_defaults                 DIFFERENT (check merge)
+  changed chat_reasoning                   IDENTICAL
+  changed chat_image_limits                IDENTICAL
+  changed reasoning_default                IDENTICAL
+  new     ink_prepare_text                 IDENTICAL
+  changed encode_epoch                     DIFFERENT (check merge)
+  new     ink_render_message               IDENTICAL
+  changed chat_begin                       IDENTICAL
+  changed chat_message                     IDENTICAL
+  changed ink_classify_header              IDENTICAL
+  changed output_next                      IDENTICAL
+  changed complete_text                    DIFFERENT (check merge)
+  changed prepare_input                    IDENTICAL
+  new     ink_image_url                    IDENTICAL
+  new     ink_content_has_image            IDENTICAL
+  new     vision_begin                     IDENTICAL
+  new     vision_end                       IDENTICAL
+  new     vision_sentinel                  IDENTICAL
+  new     vision_newline                   IDENTICAL
+  new     vision_geometry                  IDENTICAL
+  new     vision_content                   IDENTICAL
+  new     vision_slice                     IDENTICAL
+  new     vision_prepare_input             IDENTICAL
+== llm.loom
+  changed g_head_mv_q8                     DIFFERENT (check merge)
+  new     g_embed_media                    IDENTICAL
+  changed g_row_scale_f16                  IDENTICAL
+  new     g_sampling_tile_mass             IDENTICAL
+  changed g_head_select                    DIFFERENT (check merge)
+  changed g_ink_attn_split                 DIFFERENT (check merge)
+  changed g_ink_attn_combine               IDENTICAL
+  changed llm_advance                      DIFFERENT (check merge)
+missing: 0

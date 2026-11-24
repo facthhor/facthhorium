@@ -1,4 +1,2248 @@
+// Weight policy (the bf16-exact f32 router and loop-controller matrices (exact bf16 copy); draft/prep_weights.py): the listed tensors of the published checkpoint are staged and
+// converted at load by llm_prep_<src>_<dst> (llm.loom); every other tensor keeps its file bytes. No converted
+// checkpoint is written or published.
+
+func.decl import("weights") @input(%source: i32, %key: buffer, %key_offset: i64, %key_length: i64, %offset: i64, %length: i64, %alignment: i64) -> (i64)
+
+func.decl import("prepare") @stage(%root: buffer, %tag: i64) -> (i32)
+
+func.decl import("prepare") @config_i64(%stage: i32, %key: buffer, %value: i64)
+
+global.rodata.def @root0 = bytes("6c6c6d5f707265705f663332655f6266313663")
+
+global.rodata.def @blocks_key = bytes("6c6c6d2e707265705f626c6f636b73")
+
+global.rodata.def @input_key = bytes("6c6c6d2e707265705f696e707574")
+
+// "blk.0.ffn_gate_inp.weight"
+global.rodata.def @k0 = bytes("626c6b2e302e66666e5f676174655f696e702e776569676874")
+
+// "blk.1.ffn_gate_inp.weight"
+global.rodata.def @k1 = bytes("626c6b2e312e66666e5f676174655f696e702e776569676874")
+
+// "blk.10.ffn_gate_inp.weight"
+global.rodata.def @k2 = bytes("626c6b2e31302e66666e5f676174655f696e702e776569676874")
+
+// "blk.10.loop_attn_down.weight"
+global.rodata.def @k3 = bytes("626c6b2e31302e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.10.loop_attn_forget.weight"
+global.rodata.def @k4 = bytes("626c6b2e31302e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.10.loop_attn_gain.weight"
+global.rodata.def @k5 = bytes("626c6b2e31302e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.10.loop_k_down.weight"
+global.rodata.def @k6 = bytes("626c6b2e31302e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.10.loop_k_forget.weight"
+global.rodata.def @k7 = bytes("626c6b2e31302e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.10.loop_k_gain.weight"
+global.rodata.def @k8 = bytes("626c6b2e31302e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.10.loop_mlp_down.weight"
+global.rodata.def @k9 = bytes("626c6b2e31302e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.10.loop_mlp_forget.weight"
+global.rodata.def @k10 = bytes("626c6b2e31302e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.10.loop_mlp_gain.weight"
+global.rodata.def @k11 = bytes("626c6b2e31302e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.10.loop_v_down.weight"
+global.rodata.def @k12 = bytes("626c6b2e31302e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.10.loop_v_forget.weight"
+global.rodata.def @k13 = bytes("626c6b2e31302e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.10.loop_v_gain.weight"
+global.rodata.def @k14 = bytes("626c6b2e31302e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.11.ffn_gate_inp.weight"
+global.rodata.def @k15 = bytes("626c6b2e31312e66666e5f676174655f696e702e776569676874")
+
+// "blk.11.loop_attn_down.weight"
+global.rodata.def @k16 = bytes("626c6b2e31312e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.11.loop_attn_forget.weight"
+global.rodata.def @k17 = bytes("626c6b2e31312e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.11.loop_attn_gain.weight"
+global.rodata.def @k18 = bytes("626c6b2e31312e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.11.loop_k_down.weight"
+global.rodata.def @k19 = bytes("626c6b2e31312e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.11.loop_k_forget.weight"
+global.rodata.def @k20 = bytes("626c6b2e31312e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.11.loop_k_gain.weight"
+global.rodata.def @k21 = bytes("626c6b2e31312e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.11.loop_mlp_down.weight"
+global.rodata.def @k22 = bytes("626c6b2e31312e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.11.loop_mlp_forget.weight"
+global.rodata.def @k23 = bytes("626c6b2e31312e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.11.loop_mlp_gain.weight"
+global.rodata.def @k24 = bytes("626c6b2e31312e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.11.loop_v_down.weight"
+global.rodata.def @k25 = bytes("626c6b2e31312e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.11.loop_v_forget.weight"
+global.rodata.def @k26 = bytes("626c6b2e31312e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.11.loop_v_gain.weight"
+global.rodata.def @k27 = bytes("626c6b2e31312e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.12.ffn_gate_inp.weight"
+global.rodata.def @k28 = bytes("626c6b2e31322e66666e5f676174655f696e702e776569676874")
+
+// "blk.12.loop_attn_down.weight"
+global.rodata.def @k29 = bytes("626c6b2e31322e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.12.loop_attn_forget.weight"
+global.rodata.def @k30 = bytes("626c6b2e31322e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.12.loop_attn_gain.weight"
+global.rodata.def @k31 = bytes("626c6b2e31322e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.12.loop_k_down.weight"
+global.rodata.def @k32 = bytes("626c6b2e31322e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.12.loop_k_forget.weight"
+global.rodata.def @k33 = bytes("626c6b2e31322e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.12.loop_k_gain.weight"
+global.rodata.def @k34 = bytes("626c6b2e31322e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.12.loop_mlp_down.weight"
+global.rodata.def @k35 = bytes("626c6b2e31322e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.12.loop_mlp_forget.weight"
+global.rodata.def @k36 = bytes("626c6b2e31322e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.12.loop_mlp_gain.weight"
+global.rodata.def @k37 = bytes("626c6b2e31322e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.12.loop_v_down.weight"
+global.rodata.def @k38 = bytes("626c6b2e31322e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.12.loop_v_forget.weight"
+global.rodata.def @k39 = bytes("626c6b2e31322e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.12.loop_v_gain.weight"
+global.rodata.def @k40 = bytes("626c6b2e31322e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.13.ffn_gate_inp.weight"
+global.rodata.def @k41 = bytes("626c6b2e31332e66666e5f676174655f696e702e776569676874")
+
+// "blk.13.loop_attn_down.weight"
+global.rodata.def @k42 = bytes("626c6b2e31332e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.13.loop_attn_forget.weight"
+global.rodata.def @k43 = bytes("626c6b2e31332e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.13.loop_attn_gain.weight"
+global.rodata.def @k44 = bytes("626c6b2e31332e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.13.loop_k_down.weight"
+global.rodata.def @k45 = bytes("626c6b2e31332e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.13.loop_k_forget.weight"
+global.rodata.def @k46 = bytes("626c6b2e31332e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.13.loop_k_gain.weight"
+global.rodata.def @k47 = bytes("626c6b2e31332e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.13.loop_mlp_down.weight"
+global.rodata.def @k48 = bytes("626c6b2e31332e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.13.loop_mlp_forget.weight"
+global.rodata.def @k49 = bytes("626c6b2e31332e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.13.loop_mlp_gain.weight"
+global.rodata.def @k50 = bytes("626c6b2e31332e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.13.loop_v_down.weight"
+global.rodata.def @k51 = bytes("626c6b2e31332e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.13.loop_v_forget.weight"
+global.rodata.def @k52 = bytes("626c6b2e31332e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.13.loop_v_gain.weight"
+global.rodata.def @k53 = bytes("626c6b2e31332e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.14.ffn_gate_inp.weight"
+global.rodata.def @k54 = bytes("626c6b2e31342e66666e5f676174655f696e702e776569676874")
+
+// "blk.14.loop_attn_down.weight"
+global.rodata.def @k55 = bytes("626c6b2e31342e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.14.loop_attn_forget.weight"
+global.rodata.def @k56 = bytes("626c6b2e31342e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.14.loop_attn_gain.weight"
+global.rodata.def @k57 = bytes("626c6b2e31342e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.14.loop_k_down.weight"
+global.rodata.def @k58 = bytes("626c6b2e31342e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.14.loop_k_forget.weight"
+global.rodata.def @k59 = bytes("626c6b2e31342e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.14.loop_k_gain.weight"
+global.rodata.def @k60 = bytes("626c6b2e31342e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.14.loop_mlp_down.weight"
+global.rodata.def @k61 = bytes("626c6b2e31342e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.14.loop_mlp_forget.weight"
+global.rodata.def @k62 = bytes("626c6b2e31342e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.14.loop_mlp_gain.weight"
+global.rodata.def @k63 = bytes("626c6b2e31342e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.14.loop_v_down.weight"
+global.rodata.def @k64 = bytes("626c6b2e31342e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.14.loop_v_forget.weight"
+global.rodata.def @k65 = bytes("626c6b2e31342e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.14.loop_v_gain.weight"
+global.rodata.def @k66 = bytes("626c6b2e31342e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.15.ffn_gate_inp.weight"
+global.rodata.def @k67 = bytes("626c6b2e31352e66666e5f676174655f696e702e776569676874")
+
+// "blk.15.loop_attn_down.weight"
+global.rodata.def @k68 = bytes("626c6b2e31352e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.15.loop_attn_forget.weight"
+global.rodata.def @k69 = bytes("626c6b2e31352e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.15.loop_attn_gain.weight"
+global.rodata.def @k70 = bytes("626c6b2e31352e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.15.loop_k_down.weight"
+global.rodata.def @k71 = bytes("626c6b2e31352e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.15.loop_k_forget.weight"
+global.rodata.def @k72 = bytes("626c6b2e31352e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.15.loop_k_gain.weight"
+global.rodata.def @k73 = bytes("626c6b2e31352e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.15.loop_mlp_down.weight"
+global.rodata.def @k74 = bytes("626c6b2e31352e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.15.loop_mlp_forget.weight"
+global.rodata.def @k75 = bytes("626c6b2e31352e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.15.loop_mlp_gain.weight"
+global.rodata.def @k76 = bytes("626c6b2e31352e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.15.loop_v_down.weight"
+global.rodata.def @k77 = bytes("626c6b2e31352e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.15.loop_v_forget.weight"
+global.rodata.def @k78 = bytes("626c6b2e31352e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.15.loop_v_gain.weight"
+global.rodata.def @k79 = bytes("626c6b2e31352e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.16.ffn_gate_inp.weight"
+global.rodata.def @k80 = bytes("626c6b2e31362e66666e5f676174655f696e702e776569676874")
+
+// "blk.16.loop_attn_down.weight"
+global.rodata.def @k81 = bytes("626c6b2e31362e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.16.loop_attn_forget.weight"
+global.rodata.def @k82 = bytes("626c6b2e31362e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.16.loop_attn_gain.weight"
+global.rodata.def @k83 = bytes("626c6b2e31362e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.16.loop_k_down.weight"
+global.rodata.def @k84 = bytes("626c6b2e31362e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.16.loop_k_forget.weight"
+global.rodata.def @k85 = bytes("626c6b2e31362e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.16.loop_k_gain.weight"
+global.rodata.def @k86 = bytes("626c6b2e31362e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.16.loop_mlp_down.weight"
+global.rodata.def @k87 = bytes("626c6b2e31362e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.16.loop_mlp_forget.weight"
+global.rodata.def @k88 = bytes("626c6b2e31362e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.16.loop_mlp_gain.weight"
+global.rodata.def @k89 = bytes("626c6b2e31362e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.16.loop_v_down.weight"
+global.rodata.def @k90 = bytes("626c6b2e31362e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.16.loop_v_forget.weight"
+global.rodata.def @k91 = bytes("626c6b2e31362e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.16.loop_v_gain.weight"
+global.rodata.def @k92 = bytes("626c6b2e31362e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.17.ffn_gate_inp.weight"
+global.rodata.def @k93 = bytes("626c6b2e31372e66666e5f676174655f696e702e776569676874")
+
+// "blk.17.loop_attn_down.weight"
+global.rodata.def @k94 = bytes("626c6b2e31372e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.17.loop_attn_forget.weight"
+global.rodata.def @k95 = bytes("626c6b2e31372e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.17.loop_attn_gain.weight"
+global.rodata.def @k96 = bytes("626c6b2e31372e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.17.loop_k_down.weight"
+global.rodata.def @k97 = bytes("626c6b2e31372e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.17.loop_k_forget.weight"
+global.rodata.def @k98 = bytes("626c6b2e31372e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.17.loop_k_gain.weight"
+global.rodata.def @k99 = bytes("626c6b2e31372e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.17.loop_mlp_down.weight"
+global.rodata.def @k100 = bytes("626c6b2e31372e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.17.loop_mlp_forget.weight"
+global.rodata.def @k101 = bytes("626c6b2e31372e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.17.loop_mlp_gain.weight"
+global.rodata.def @k102 = bytes("626c6b2e31372e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.17.loop_v_down.weight"
+global.rodata.def @k103 = bytes("626c6b2e31372e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.17.loop_v_forget.weight"
+global.rodata.def @k104 = bytes("626c6b2e31372e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.17.loop_v_gain.weight"
+global.rodata.def @k105 = bytes("626c6b2e31372e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.18.ffn_gate_inp.weight"
+global.rodata.def @k106 = bytes("626c6b2e31382e66666e5f676174655f696e702e776569676874")
+
+// "blk.19.ffn_gate_inp.weight"
+global.rodata.def @k107 = bytes("626c6b2e31392e66666e5f676174655f696e702e776569676874")
+
+// "blk.2.ffn_gate_inp.weight"
+global.rodata.def @k108 = bytes("626c6b2e322e66666e5f676174655f696e702e776569676874")
+
+// "blk.20.ffn_gate_inp.weight"
+global.rodata.def @k109 = bytes("626c6b2e32302e66666e5f676174655f696e702e776569676874")
+
+// "blk.21.ffn_gate_inp.weight"
+global.rodata.def @k110 = bytes("626c6b2e32312e66666e5f676174655f696e702e776569676874")
+
+// "blk.22.ffn_gate_inp.weight"
+global.rodata.def @k111 = bytes("626c6b2e32322e66666e5f676174655f696e702e776569676874")
+
+// "blk.23.ffn_gate_inp.weight"
+global.rodata.def @k112 = bytes("626c6b2e32332e66666e5f676174655f696e702e776569676874")
+
+// "blk.3.ffn_gate_inp.weight"
+global.rodata.def @k113 = bytes("626c6b2e332e66666e5f676174655f696e702e776569676874")
+
+// "blk.4.ffn_gate_inp.weight"
+global.rodata.def @k114 = bytes("626c6b2e342e66666e5f676174655f696e702e776569676874")
+
+// "blk.5.ffn_gate_inp.weight"
+global.rodata.def @k115 = bytes("626c6b2e352e66666e5f676174655f696e702e776569676874")
+
+// "blk.6.ffn_gate_inp.weight"
+global.rodata.def @k116 = bytes("626c6b2e362e66666e5f676174655f696e702e776569676874")
+
+// "blk.6.loop_attn_down.weight"
+global.rodata.def @k117 = bytes("626c6b2e362e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.6.loop_attn_forget.weight"
+global.rodata.def @k118 = bytes("626c6b2e362e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.6.loop_attn_gain.weight"
+global.rodata.def @k119 = bytes("626c6b2e362e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.6.loop_k_down.weight"
+global.rodata.def @k120 = bytes("626c6b2e362e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.6.loop_k_forget.weight"
+global.rodata.def @k121 = bytes("626c6b2e362e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.6.loop_k_gain.weight"
+global.rodata.def @k122 = bytes("626c6b2e362e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.6.loop_mlp_down.weight"
+global.rodata.def @k123 = bytes("626c6b2e362e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.6.loop_mlp_forget.weight"
+global.rodata.def @k124 = bytes("626c6b2e362e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.6.loop_mlp_gain.weight"
+global.rodata.def @k125 = bytes("626c6b2e362e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.6.loop_v_down.weight"
+global.rodata.def @k126 = bytes("626c6b2e362e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.6.loop_v_forget.weight"
+global.rodata.def @k127 = bytes("626c6b2e362e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.6.loop_v_gain.weight"
+global.rodata.def @k128 = bytes("626c6b2e362e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.7.ffn_gate_inp.weight"
+global.rodata.def @k129 = bytes("626c6b2e372e66666e5f676174655f696e702e776569676874")
+
+// "blk.7.loop_attn_down.weight"
+global.rodata.def @k130 = bytes("626c6b2e372e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.7.loop_attn_forget.weight"
+global.rodata.def @k131 = bytes("626c6b2e372e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.7.loop_attn_gain.weight"
+global.rodata.def @k132 = bytes("626c6b2e372e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.7.loop_k_down.weight"
+global.rodata.def @k133 = bytes("626c6b2e372e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.7.loop_k_forget.weight"
+global.rodata.def @k134 = bytes("626c6b2e372e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.7.loop_k_gain.weight"
+global.rodata.def @k135 = bytes("626c6b2e372e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.7.loop_mlp_down.weight"
+global.rodata.def @k136 = bytes("626c6b2e372e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.7.loop_mlp_forget.weight"
+global.rodata.def @k137 = bytes("626c6b2e372e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.7.loop_mlp_gain.weight"
+global.rodata.def @k138 = bytes("626c6b2e372e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.7.loop_v_down.weight"
+global.rodata.def @k139 = bytes("626c6b2e372e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.7.loop_v_forget.weight"
+global.rodata.def @k140 = bytes("626c6b2e372e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.7.loop_v_gain.weight"
+global.rodata.def @k141 = bytes("626c6b2e372e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.8.ffn_gate_inp.weight"
+global.rodata.def @k142 = bytes("626c6b2e382e66666e5f676174655f696e702e776569676874")
+
+// "blk.8.loop_attn_down.weight"
+global.rodata.def @k143 = bytes("626c6b2e382e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.8.loop_attn_forget.weight"
+global.rodata.def @k144 = bytes("626c6b2e382e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.8.loop_attn_gain.weight"
+global.rodata.def @k145 = bytes("626c6b2e382e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.8.loop_k_down.weight"
+global.rodata.def @k146 = bytes("626c6b2e382e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.8.loop_k_forget.weight"
+global.rodata.def @k147 = bytes("626c6b2e382e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.8.loop_k_gain.weight"
+global.rodata.def @k148 = bytes("626c6b2e382e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.8.loop_mlp_down.weight"
+global.rodata.def @k149 = bytes("626c6b2e382e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.8.loop_mlp_forget.weight"
+global.rodata.def @k150 = bytes("626c6b2e382e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.8.loop_mlp_gain.weight"
+global.rodata.def @k151 = bytes("626c6b2e382e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.8.loop_v_down.weight"
+global.rodata.def @k152 = bytes("626c6b2e382e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.8.loop_v_forget.weight"
+global.rodata.def @k153 = bytes("626c6b2e382e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.8.loop_v_gain.weight"
+global.rodata.def @k154 = bytes("626c6b2e382e6c6f6f705f765f6761696e2e776569676874")
+
+// "blk.9.ffn_gate_inp.weight"
+global.rodata.def @k155 = bytes("626c6b2e392e66666e5f676174655f696e702e776569676874")
+
+// "blk.9.loop_attn_down.weight"
+global.rodata.def @k156 = bytes("626c6b2e392e6c6f6f705f6174746e5f646f776e2e776569676874")
+
+// "blk.9.loop_attn_forget.weight"
+global.rodata.def @k157 = bytes("626c6b2e392e6c6f6f705f6174746e5f666f726765742e776569676874")
+
+// "blk.9.loop_attn_gain.weight"
+global.rodata.def @k158 = bytes("626c6b2e392e6c6f6f705f6174746e5f6761696e2e776569676874")
+
+// "blk.9.loop_k_down.weight"
+global.rodata.def @k159 = bytes("626c6b2e392e6c6f6f705f6b5f646f776e2e776569676874")
+
+// "blk.9.loop_k_forget.weight"
+global.rodata.def @k160 = bytes("626c6b2e392e6c6f6f705f6b5f666f726765742e776569676874")
+
+// "blk.9.loop_k_gain.weight"
+global.rodata.def @k161 = bytes("626c6b2e392e6c6f6f705f6b5f6761696e2e776569676874")
+
+// "blk.9.loop_mlp_down.weight"
+global.rodata.def @k162 = bytes("626c6b2e392e6c6f6f705f6d6c705f646f776e2e776569676874")
+
+// "blk.9.loop_mlp_forget.weight"
+global.rodata.def @k163 = bytes("626c6b2e392e6c6f6f705f6d6c705f666f726765742e776569676874")
+
+// "blk.9.loop_mlp_gain.weight"
+global.rodata.def @k164 = bytes("626c6b2e392e6c6f6f705f6d6c705f6761696e2e776569676874")
+
+// "blk.9.loop_v_down.weight"
+global.rodata.def @k165 = bytes("626c6b2e392e6c6f6f705f765f646f776e2e776569676874")
+
+// "blk.9.loop_v_forget.weight"
+global.rodata.def @k166 = bytes("626c6b2e392e6c6f6f705f765f666f726765742e776569676874")
+
+// "blk.9.loop_v_gain.weight"
+global.rodata.def @k167 = bytes("626c6b2e392e6c6f6f705f765f6761696e2e776569676874")
+
+func.def @same(%key: buffer, %name: buffer) -> (i1) {
+  %a = buffer.length %key
+  %b = buffer.length %name
+  %sized = index.cmp eq, %a, %b : offset
+  %result = scf.if %sized -> (i1) {
+    %o = index.constant 0 : offset
+    %order = buffer.compare %key[%o], %name[%o], %b
+    %z = scalar.constant 0 : i32
+    %same = scalar.cmpi eq, %order, %z : i32
+    scf.yield %same : i1
+  } else {
+    %no = scalar.constant false : i1
+    scf.yield %no : i1
+  }
+  func.return %result : i1
+}
+
 func.def public @prepare_weight(%key: buffer) -> (i64) {
-  %bytes = scalar.constant 0 : i64
+  %zero = scalar.constant 0 : i64
+  %blocks_0 = scalar.constant 0 : i64
+  %kind_0 = scalar.constant 0 : i64
+  %inb_0 = scalar.constant 0 : i64
+  %outb_0 = scalar.constant 0 : i64
+  %name0 = global.load @k0 : buffer
+  %is0 = func.call @same(%key, %name0) : (buffer, buffer) -> (i1)
+  %nb0 = scalar.constant 294912 : i64
+  %nk0 = scalar.constant 0 : i64
+  %ni0 = scalar.constant 4 : i64
+  %no0 = scalar.constant 2 : i64
+  %blocks_1 = scf.select %is0, %nb0, %blocks_0 : i64
+  %kind_1 = scf.select %is0, %nk0, %kind_0 : i64
+  %inb_1 = scf.select %is0, %ni0, %inb_0 : i64
+  %outb_1 = scf.select %is0, %no0, %outb_0 : i64
+  %name1 = global.load @k1 : buffer
+  %is1 = func.call @same(%key, %name1) : (buffer, buffer) -> (i1)
+  %nb1 = scalar.constant 294912 : i64
+  %nk1 = scalar.constant 0 : i64
+  %ni1 = scalar.constant 4 : i64
+  %no1 = scalar.constant 2 : i64
+  %blocks_2 = scf.select %is1, %nb1, %blocks_1 : i64
+  %kind_2 = scf.select %is1, %nk1, %kind_1 : i64
+  %inb_2 = scf.select %is1, %ni1, %inb_1 : i64
+  %outb_2 = scf.select %is1, %no1, %outb_1 : i64
+  %name2 = global.load @k2 : buffer
+  %is2 = func.call @same(%key, %name2) : (buffer, buffer) -> (i1)
+  %nb2 = scalar.constant 294912 : i64
+  %nk2 = scalar.constant 0 : i64
+  %ni2 = scalar.constant 4 : i64
+  %no2 = scalar.constant 2 : i64
+  %blocks_3 = scf.select %is2, %nb2, %blocks_2 : i64
+  %kind_3 = scf.select %is2, %nk2, %kind_2 : i64
+  %inb_3 = scf.select %is2, %ni2, %inb_2 : i64
+  %outb_3 = scf.select %is2, %no2, %outb_2 : i64
+  %name3 = global.load @k3 : buffer
+  %is3 = func.call @same(%key, %name3) : (buffer, buffer) -> (i1)
+  %nb3 = scalar.constant 294912 : i64
+  %nk3 = scalar.constant 0 : i64
+  %ni3 = scalar.constant 4 : i64
+  %no3 = scalar.constant 2 : i64
+  %blocks_4 = scf.select %is3, %nb3, %blocks_3 : i64
+  %kind_4 = scf.select %is3, %nk3, %kind_3 : i64
+  %inb_4 = scf.select %is3, %ni3, %inb_3 : i64
+  %outb_4 = scf.select %is3, %no3, %outb_3 : i64
+  %name4 = global.load @k4 : buffer
+  %is4 = func.call @same(%key, %name4) : (buffer, buffer) -> (i1)
+  %nb4 = scalar.constant 147456 : i64
+  %nk4 = scalar.constant 0 : i64
+  %ni4 = scalar.constant 4 : i64
+  %no4 = scalar.constant 2 : i64
+  %blocks_5 = scf.select %is4, %nb4, %blocks_4 : i64
+  %kind_5 = scf.select %is4, %nk4, %kind_4 : i64
+  %inb_5 = scf.select %is4, %ni4, %inb_4 : i64
+  %outb_5 = scf.select %is4, %no4, %outb_4 : i64
+  %name5 = global.load @k5 : buffer
+  %is5 = func.call @same(%key, %name5) : (buffer, buffer) -> (i1)
+  %nb5 = scalar.constant 147456 : i64
+  %nk5 = scalar.constant 0 : i64
+  %ni5 = scalar.constant 4 : i64
+  %no5 = scalar.constant 2 : i64
+  %blocks_6 = scf.select %is5, %nb5, %blocks_5 : i64
+  %kind_6 = scf.select %is5, %nk5, %kind_5 : i64
+  %inb_6 = scf.select %is5, %ni5, %inb_5 : i64
+  %outb_6 = scf.select %is5, %no5, %outb_5 : i64
+  %name6 = global.load @k6 : buffer
+  %is6 = func.call @same(%key, %name6) : (buffer, buffer) -> (i1)
+  %nb6 = scalar.constant 294912 : i64
+  %nk6 = scalar.constant 0 : i64
+  %ni6 = scalar.constant 4 : i64
+  %no6 = scalar.constant 2 : i64
+  %blocks_7 = scf.select %is6, %nb6, %blocks_6 : i64
+  %kind_7 = scf.select %is6, %nk6, %kind_6 : i64
+  %inb_7 = scf.select %is6, %ni6, %inb_6 : i64
+  %outb_7 = scf.select %is6, %no6, %outb_6 : i64
+  %name7 = global.load @k7 : buffer
+  %is7 = func.call @same(%key, %name7) : (buffer, buffer) -> (i1)
+  %nb7 = scalar.constant 147456 : i64
+  %nk7 = scalar.constant 0 : i64
+  %ni7 = scalar.constant 4 : i64
+  %no7 = scalar.constant 2 : i64
+  %blocks_8 = scf.select %is7, %nb7, %blocks_7 : i64
+  %kind_8 = scf.select %is7, %nk7, %kind_7 : i64
+  %inb_8 = scf.select %is7, %ni7, %inb_7 : i64
+  %outb_8 = scf.select %is7, %no7, %outb_7 : i64
+  %name8 = global.load @k8 : buffer
+  %is8 = func.call @same(%key, %name8) : (buffer, buffer) -> (i1)
+  %nb8 = scalar.constant 147456 : i64
+  %nk8 = scalar.constant 0 : i64
+  %ni8 = scalar.constant 4 : i64
+  %no8 = scalar.constant 2 : i64
+  %blocks_9 = scf.select %is8, %nb8, %blocks_8 : i64
+  %kind_9 = scf.select %is8, %nk8, %kind_8 : i64
+  %inb_9 = scf.select %is8, %ni8, %inb_8 : i64
+  %outb_9 = scf.select %is8, %no8, %outb_8 : i64
+  %name9 = global.load @k9 : buffer
+  %is9 = func.call @same(%key, %name9) : (buffer, buffer) -> (i1)
+  %nb9 = scalar.constant 294912 : i64
+  %nk9 = scalar.constant 0 : i64
+  %ni9 = scalar.constant 4 : i64
+  %no9 = scalar.constant 2 : i64
+  %blocks_10 = scf.select %is9, %nb9, %blocks_9 : i64
+  %kind_10 = scf.select %is9, %nk9, %kind_9 : i64
+  %inb_10 = scf.select %is9, %ni9, %inb_9 : i64
+  %outb_10 = scf.select %is9, %no9, %outb_9 : i64
+  %name10 = global.load @k10 : buffer
+  %is10 = func.call @same(%key, %name10) : (buffer, buffer) -> (i1)
+  %nb10 = scalar.constant 147456 : i64
+  %nk10 = scalar.constant 0 : i64
+  %ni10 = scalar.constant 4 : i64
+  %no10 = scalar.constant 2 : i64
+  %blocks_11 = scf.select %is10, %nb10, %blocks_10 : i64
+  %kind_11 = scf.select %is10, %nk10, %kind_10 : i64
+  %inb_11 = scf.select %is10, %ni10, %inb_10 : i64
+  %outb_11 = scf.select %is10, %no10, %outb_10 : i64
+  %name11 = global.load @k11 : buffer
+  %is11 = func.call @same(%key, %name11) : (buffer, buffer) -> (i1)
+  %nb11 = scalar.constant 147456 : i64
+  %nk11 = scalar.constant 0 : i64
+  %ni11 = scalar.constant 4 : i64
+  %no11 = scalar.constant 2 : i64
+  %blocks_12 = scf.select %is11, %nb11, %blocks_11 : i64
+  %kind_12 = scf.select %is11, %nk11, %kind_11 : i64
+  %inb_12 = scf.select %is11, %ni11, %inb_11 : i64
+  %outb_12 = scf.select %is11, %no11, %outb_11 : i64
+  %name12 = global.load @k12 : buffer
+  %is12 = func.call @same(%key, %name12) : (buffer, buffer) -> (i1)
+  %nb12 = scalar.constant 294912 : i64
+  %nk12 = scalar.constant 0 : i64
+  %ni12 = scalar.constant 4 : i64
+  %no12 = scalar.constant 2 : i64
+  %blocks_13 = scf.select %is12, %nb12, %blocks_12 : i64
+  %kind_13 = scf.select %is12, %nk12, %kind_12 : i64
+  %inb_13 = scf.select %is12, %ni12, %inb_12 : i64
+  %outb_13 = scf.select %is12, %no12, %outb_12 : i64
+  %name13 = global.load @k13 : buffer
+  %is13 = func.call @same(%key, %name13) : (buffer, buffer) -> (i1)
+  %nb13 = scalar.constant 147456 : i64
+  %nk13 = scalar.constant 0 : i64
+  %ni13 = scalar.constant 4 : i64
+  %no13 = scalar.constant 2 : i64
+  %blocks_14 = scf.select %is13, %nb13, %blocks_13 : i64
+  %kind_14 = scf.select %is13, %nk13, %kind_13 : i64
+  %inb_14 = scf.select %is13, %ni13, %inb_13 : i64
+  %outb_14 = scf.select %is13, %no13, %outb_13 : i64
+  %name14 = global.load @k14 : buffer
+  %is14 = func.call @same(%key, %name14) : (buffer, buffer) -> (i1)
+  %nb14 = scalar.constant 147456 : i64
+  %nk14 = scalar.constant 0 : i64
+  %ni14 = scalar.constant 4 : i64
+  %no14 = scalar.constant 2 : i64
+  %blocks_15 = scf.select %is14, %nb14, %blocks_14 : i64
+  %kind_15 = scf.select %is14, %nk14, %kind_14 : i64
+  %inb_15 = scf.select %is14, %ni14, %inb_14 : i64
+  %outb_15 = scf.select %is14, %no14, %outb_14 : i64
+  %name15 = global.load @k15 : buffer
+  %is15 = func.call @same(%key, %name15) : (buffer, buffer) -> (i1)
+  %nb15 = scalar.constant 294912 : i64
+  %nk15 = scalar.constant 0 : i64
+  %ni15 = scalar.constant 4 : i64
+  %no15 = scalar.constant 2 : i64
+  %blocks_16 = scf.select %is15, %nb15, %blocks_15 : i64
+  %kind_16 = scf.select %is15, %nk15, %kind_15 : i64
+  %inb_16 = scf.select %is15, %ni15, %inb_15 : i64
+  %outb_16 = scf.select %is15, %no15, %outb_15 : i64
+  %name16 = global.load @k16 : buffer
+  %is16 = func.call @same(%key, %name16) : (buffer, buffer) -> (i1)
+  %nb16 = scalar.constant 294912 : i64
+  %nk16 = scalar.constant 0 : i64
+  %ni16 = scalar.constant 4 : i64
+  %no16 = scalar.constant 2 : i64
+  %blocks_17 = scf.select %is16, %nb16, %blocks_16 : i64
+  %kind_17 = scf.select %is16, %nk16, %kind_16 : i64
+  %inb_17 = scf.select %is16, %ni16, %inb_16 : i64
+  %outb_17 = scf.select %is16, %no16, %outb_16 : i64
+  %name17 = global.load @k17 : buffer
+  %is17 = func.call @same(%key, %name17) : (buffer, buffer) -> (i1)
+  %nb17 = scalar.constant 147456 : i64
+  %nk17 = scalar.constant 0 : i64
+  %ni17 = scalar.constant 4 : i64
+  %no17 = scalar.constant 2 : i64
+  %blocks_18 = scf.select %is17, %nb17, %blocks_17 : i64
+  %kind_18 = scf.select %is17, %nk17, %kind_17 : i64
+  %inb_18 = scf.select %is17, %ni17, %inb_17 : i64
+  %outb_18 = scf.select %is17, %no17, %outb_17 : i64
+  %name18 = global.load @k18 : buffer
+  %is18 = func.call @same(%key, %name18) : (buffer, buffer) -> (i1)
+  %nb18 = scalar.constant 147456 : i64
+  %nk18 = scalar.constant 0 : i64
+  %ni18 = scalar.constant 4 : i64
+  %no18 = scalar.constant 2 : i64
+  %blocks_19 = scf.select %is18, %nb18, %blocks_18 : i64
+  %kind_19 = scf.select %is18, %nk18, %kind_18 : i64
+  %inb_19 = scf.select %is18, %ni18, %inb_18 : i64
+  %outb_19 = scf.select %is18, %no18, %outb_18 : i64
+  %name19 = global.load @k19 : buffer
+  %is19 = func.call @same(%key, %name19) : (buffer, buffer) -> (i1)
+  %nb19 = scalar.constant 294912 : i64
+  %nk19 = scalar.constant 0 : i64
+  %ni19 = scalar.constant 4 : i64
+  %no19 = scalar.constant 2 : i64
+  %blocks_20 = scf.select %is19, %nb19, %blocks_19 : i64
+  %kind_20 = scf.select %is19, %nk19, %kind_19 : i64
+  %inb_20 = scf.select %is19, %ni19, %inb_19 : i64
+  %outb_20 = scf.select %is19, %no19, %outb_19 : i64
+  %name20 = global.load @k20 : buffer
+  %is20 = func.call @same(%key, %name20) : (buffer, buffer) -> (i1)
+  %nb20 = scalar.constant 147456 : i64
+  %nk20 = scalar.constant 0 : i64
+  %ni20 = scalar.constant 4 : i64
+  %no20 = scalar.constant 2 : i64
+  %blocks_21 = scf.select %is20, %nb20, %blocks_20 : i64
+  %kind_21 = scf.select %is20, %nk20, %kind_20 : i64
+  %inb_21 = scf.select %is20, %ni20, %inb_20 : i64
+  %outb_21 = scf.select %is20, %no20, %outb_20 : i64
+  %name21 = global.load @k21 : buffer
+  %is21 = func.call @same(%key, %name21) : (buffer, buffer) -> (i1)
+  %nb21 = scalar.constant 147456 : i64
+  %nk21 = scalar.constant 0 : i64
+  %ni21 = scalar.constant 4 : i64
+  %no21 = scalar.constant 2 : i64
+  %blocks_22 = scf.select %is21, %nb21, %blocks_21 : i64
+  %kind_22 = scf.select %is21, %nk21, %kind_21 : i64
+  %inb_22 = scf.select %is21, %ni21, %inb_21 : i64
+  %outb_22 = scf.select %is21, %no21, %outb_21 : i64
+  %name22 = global.load @k22 : buffer
+  %is22 = func.call @same(%key, %name22) : (buffer, buffer) -> (i1)
+  %nb22 = scalar.constant 294912 : i64
+  %nk22 = scalar.constant 0 : i64
+  %ni22 = scalar.constant 4 : i64
+  %no22 = scalar.constant 2 : i64
+  %blocks_23 = scf.select %is22, %nb22, %blocks_22 : i64
+  %kind_23 = scf.select %is22, %nk22, %kind_22 : i64
+  %inb_23 = scf.select %is22, %ni22, %inb_22 : i64
+  %outb_23 = scf.select %is22, %no22, %outb_22 : i64
+  %name23 = global.load @k23 : buffer
+  %is23 = func.call @same(%key, %name23) : (buffer, buffer) -> (i1)
+  %nb23 = scalar.constant 147456 : i64
+  %nk23 = scalar.constant 0 : i64
+  %ni23 = scalar.constant 4 : i64
+  %no23 = scalar.constant 2 : i64
+  %blocks_24 = scf.select %is23, %nb23, %blocks_23 : i64
+  %kind_24 = scf.select %is23, %nk23, %kind_23 : i64
+  %inb_24 = scf.select %is23, %ni23, %inb_23 : i64
+  %outb_24 = scf.select %is23, %no23, %outb_23 : i64
+  %name24 = global.load @k24 : buffer
+  %is24 = func.call @same(%key, %name24) : (buffer, buffer) -> (i1)
+  %nb24 = scalar.constant 147456 : i64
+  %nk24 = scalar.constant 0 : i64
+  %ni24 = scalar.constant 4 : i64
+  %no24 = scalar.constant 2 : i64
+  %blocks_25 = scf.select %is24, %nb24, %blocks_24 : i64
+  %kind_25 = scf.select %is24, %nk24, %kind_24 : i64
+  %inb_25 = scf.select %is24, %ni24, %inb_24 : i64
+  %outb_25 = scf.select %is24, %no24, %outb_24 : i64
+  %name25 = global.load @k25 : buffer
+  %is25 = func.call @same(%key, %name25) : (buffer, buffer) -> (i1)
+  %nb25 = scalar.constant 294912 : i64
+  %nk25 = scalar.constant 0 : i64
+  %ni25 = scalar.constant 4 : i64
+  %no25 = scalar.constant 2 : i64
+  %blocks_26 = scf.select %is25, %nb25, %blocks_25 : i64
+  %kind_26 = scf.select %is25, %nk25, %kind_25 : i64
+  %inb_26 = scf.select %is25, %ni25, %inb_25 : i64
+  %outb_26 = scf.select %is25, %no25, %outb_25 : i64
+  %name26 = global.load @k26 : buffer
+  %is26 = func.call @same(%key, %name26) : (buffer, buffer) -> (i1)
+  %nb26 = scalar.constant 147456 : i64
+  %nk26 = scalar.constant 0 : i64
+  %ni26 = scalar.constant 4 : i64
+  %no26 = scalar.constant 2 : i64
+  %blocks_27 = scf.select %is26, %nb26, %blocks_26 : i64
+  %kind_27 = scf.select %is26, %nk26, %kind_26 : i64
+  %inb_27 = scf.select %is26, %ni26, %inb_26 : i64
+  %outb_27 = scf.select %is26, %no26, %outb_26 : i64
+  %name27 = global.load @k27 : buffer
+  %is27 = func.call @same(%key, %name27) : (buffer, buffer) -> (i1)
+  %nb27 = scalar.constant 147456 : i64
+  %nk27 = scalar.constant 0 : i64
+  %ni27 = scalar.constant 4 : i64
+  %no27 = scalar.constant 2 : i64
+  %blocks_28 = scf.select %is27, %nb27, %blocks_27 : i64
+  %kind_28 = scf.select %is27, %nk27, %kind_27 : i64
+  %inb_28 = scf.select %is27, %ni27, %inb_27 : i64
+  %outb_28 = scf.select %is27, %no27, %outb_27 : i64
+  %name28 = global.load @k28 : buffer
+  %is28 = func.call @same(%key, %name28) : (buffer, buffer) -> (i1)
+  %nb28 = scalar.constant 294912 : i64
+  %nk28 = scalar.constant 0 : i64
+  %ni28 = scalar.constant 4 : i64
+  %no28 = scalar.constant 2 : i64
+  %blocks_29 = scf.select %is28, %nb28, %blocks_28 : i64
+  %kind_29 = scf.select %is28, %nk28, %kind_28 : i64
+  %inb_29 = scf.select %is28, %ni28, %inb_28 : i64
+  %outb_29 = scf.select %is28, %no28, %outb_28 : i64
+  %name29 = global.load @k29 : buffer
+  %is29 = func.call @same(%key, %name29) : (buffer, buffer) -> (i1)
+  %nb29 = scalar.constant 294912 : i64
+  %nk29 = scalar.constant 0 : i64
+  %ni29 = scalar.constant 4 : i64
+  %no29 = scalar.constant 2 : i64
+  %blocks_30 = scf.select %is29, %nb29, %blocks_29 : i64
+  %kind_30 = scf.select %is29, %nk29, %kind_29 : i64
+  %inb_30 = scf.select %is29, %ni29, %inb_29 : i64
+  %outb_30 = scf.select %is29, %no29, %outb_29 : i64
+  %name30 = global.load @k30 : buffer
+  %is30 = func.call @same(%key, %name30) : (buffer, buffer) -> (i1)
+  %nb30 = scalar.constant 147456 : i64
+  %nk30 = scalar.constant 0 : i64
+  %ni30 = scalar.constant 4 : i64
+  %no30 = scalar.constant 2 : i64
+  %blocks_31 = scf.select %is30, %nb30, %blocks_30 : i64
+  %kind_31 = scf.select %is30, %nk30, %kind_30 : i64
+  %inb_31 = scf.select %is30, %ni30, %inb_30 : i64
+  %outb_31 = scf.select %is30, %no30, %outb_30 : i64
+  %name31 = global.load @k31 : buffer
+  %is31 = func.call @same(%key, %name31) : (buffer, buffer) -> (i1)
+  %nb31 = scalar.constant 147456 : i64
+  %nk31 = scalar.constant 0 : i64
+  %ni31 = scalar.constant 4 : i64
+  %no31 = scalar.constant 2 : i64
+  %blocks_32 = scf.select %is31, %nb31, %blocks_31 : i64
+  %kind_32 = scf.select %is31, %nk31, %kind_31 : i64
+  %inb_32 = scf.select %is31, %ni31, %inb_31 : i64
+  %outb_32 = scf.select %is31, %no31, %outb_31 : i64
+  %name32 = global.load @k32 : buffer
+  %is32 = func.call @same(%key, %name32) : (buffer, buffer) -> (i1)
+  %nb32 = scalar.constant 294912 : i64
+  %nk32 = scalar.constant 0 : i64
+  %ni32 = scalar.constant 4 : i64
+  %no32 = scalar.constant 2 : i64
+  %blocks_33 = scf.select %is32, %nb32, %blocks_32 : i64
+  %kind_33 = scf.select %is32, %nk32, %kind_32 : i64
+  %inb_33 = scf.select %is32, %ni32, %inb_32 : i64
+  %outb_33 = scf.select %is32, %no32, %outb_32 : i64
+  %name33 = global.load @k33 : buffer
+  %is33 = func.call @same(%key, %name33) : (buffer, buffer) -> (i1)
+  %nb33 = scalar.constant 147456 : i64
+  %nk33 = scalar.constant 0 : i64
+  %ni33 = scalar.constant 4 : i64
+  %no33 = scalar.constant 2 : i64
+  %blocks_34 = scf.select %is33, %nb33, %blocks_33 : i64
+  %kind_34 = scf.select %is33, %nk33, %kind_33 : i64
+  %inb_34 = scf.select %is33, %ni33, %inb_33 : i64
+  %outb_34 = scf.select %is33, %no33, %outb_33 : i64
+  %name34 = global.load @k34 : buffer
+  %is34 = func.call @same(%key, %name34) : (buffer, buffer) -> (i1)
+  %nb34 = scalar.constant 147456 : i64
+  %nk34 = scalar.constant 0 : i64
+  %ni34 = scalar.constant 4 : i64
+  %no34 = scalar.constant 2 : i64
+  %blocks_35 = scf.select %is34, %nb34, %blocks_34 : i64
+  %kind_35 = scf.select %is34, %nk34, %kind_34 : i64
+  %inb_35 = scf.select %is34, %ni34, %inb_34 : i64
+  %outb_35 = scf.select %is34, %no34, %outb_34 : i64
+  %name35 = global.load @k35 : buffer
+  %is35 = func.call @same(%key, %name35) : (buffer, buffer) -> (i1)
+  %nb35 = scalar.constant 294912 : i64
+  %nk35 = scalar.constant 0 : i64
+  %ni35 = scalar.constant 4 : i64
+  %no35 = scalar.constant 2 : i64
+  %blocks_36 = scf.select %is35, %nb35, %blocks_35 : i64
+  %kind_36 = scf.select %is35, %nk35, %kind_35 : i64
+  %inb_36 = scf.select %is35, %ni35, %inb_35 : i64
+  %outb_36 = scf.select %is35, %no35, %outb_35 : i64
+  %name36 = global.load @k36 : buffer
+  %is36 = func.call @same(%key, %name36) : (buffer, buffer) -> (i1)
+  %nb36 = scalar.constant 147456 : i64
+  %nk36 = scalar.constant 0 : i64
+  %ni36 = scalar.constant 4 : i64
+  %no36 = scalar.constant 2 : i64
+  %blocks_37 = scf.select %is36, %nb36, %blocks_36 : i64
+  %kind_37 = scf.select %is36, %nk36, %kind_36 : i64
+  %inb_37 = scf.select %is36, %ni36, %inb_36 : i64
+  %outb_37 = scf.select %is36, %no36, %outb_36 : i64
+  %name37 = global.load @k37 : buffer
+  %is37 = func.call @same(%key, %name37) : (buffer, buffer) -> (i1)
+  %nb37 = scalar.constant 147456 : i64
+  %nk37 = scalar.constant 0 : i64
+  %ni37 = scalar.constant 4 : i64
+  %no37 = scalar.constant 2 : i64
+  %blocks_38 = scf.select %is37, %nb37, %blocks_37 : i64
+  %kind_38 = scf.select %is37, %nk37, %kind_37 : i64
+  %inb_38 = scf.select %is37, %ni37, %inb_37 : i64
+  %outb_38 = scf.select %is37, %no37, %outb_37 : i64
+  %name38 = global.load @k38 : buffer
+  %is38 = func.call @same(%key, %name38) : (buffer, buffer) -> (i1)
+  %nb38 = scalar.constant 294912 : i64
+  %nk38 = scalar.constant 0 : i64
+  %ni38 = scalar.constant 4 : i64
+  %no38 = scalar.constant 2 : i64
+  %blocks_39 = scf.select %is38, %nb38, %blocks_38 : i64
+  %kind_39 = scf.select %is38, %nk38, %kind_38 : i64
+  %inb_39 = scf.select %is38, %ni38, %inb_38 : i64
+  %outb_39 = scf.select %is38, %no38, %outb_38 : i64
+  %name39 = global.load @k39 : buffer
+  %is39 = func.call @same(%key, %name39) : (buffer, buffer) -> (i1)
+  %nb39 = scalar.constant 147456 : i64
+  %nk39 = scalar.constant 0 : i64
+  %ni39 = scalar.constant 4 : i64
+  %no39 = scalar.constant 2 : i64
+  %blocks_40 = scf.select %is39, %nb39, %blocks_39 : i64
+  %kind_40 = scf.select %is39, %nk39, %kind_39 : i64
+  %inb_40 = scf.select %is39, %ni39, %inb_39 : i64
+  %outb_40 = scf.select %is39, %no39, %outb_39 : i64
+  %name40 = global.load @k40 : buffer
+  %is40 = func.call @same(%key, %name40) : (buffer, buffer) -> (i1)
+  %nb40 = scalar.constant 147456 : i64
+  %nk40 = scalar.constant 0 : i64
+  %ni40 = scalar.constant 4 : i64
+  %no40 = scalar.constant 2 : i64
+  %blocks_41 = scf.select %is40, %nb40, %blocks_40 : i64
+  %kind_41 = scf.select %is40, %nk40, %kind_40 : i64
+  %inb_41 = scf.select %is40, %ni40, %inb_40 : i64
+  %outb_41 = scf.select %is40, %no40, %outb_40 : i64
+  %name41 = global.load @k41 : buffer
+  %is41 = func.call @same(%key, %name41) : (buffer, buffer) -> (i1)
+  %nb41 = scalar.constant 294912 : i64
+  %nk41 = scalar.constant 0 : i64
+  %ni41 = scalar.constant 4 : i64
+  %no41 = scalar.constant 2 : i64
+  %blocks_42 = scf.select %is41, %nb41, %blocks_41 : i64
+  %kind_42 = scf.select %is41, %nk41, %kind_41 : i64
+  %inb_42 = scf.select %is41, %ni41, %inb_41 : i64
+  %outb_42 = scf.select %is41, %no41, %outb_41 : i64
+  %name42 = global.load @k42 : buffer
+  %is42 = func.call @same(%key, %name42) : (buffer, buffer) -> (i1)
+  %nb42 = scalar.constant 294912 : i64
+  %nk42 = scalar.constant 0 : i64
+  %ni42 = scalar.constant 4 : i64
+  %no42 = scalar.constant 2 : i64
+  %blocks_43 = scf.select %is42, %nb42, %blocks_42 : i64
+  %kind_43 = scf.select %is42, %nk42, %kind_42 : i64
+  %inb_43 = scf.select %is42, %ni42, %inb_42 : i64
+  %outb_43 = scf.select %is42, %no42, %outb_42 : i64
+  %name43 = global.load @k43 : buffer
+  %is43 = func.call @same(%key, %name43) : (buffer, buffer) -> (i1)
+  %nb43 = scalar.constant 147456 : i64
+  %nk43 = scalar.constant 0 : i64
+  %ni43 = scalar.constant 4 : i64
+  %no43 = scalar.constant 2 : i64
+  %blocks_44 = scf.select %is43, %nb43, %blocks_43 : i64
+  %kind_44 = scf.select %is43, %nk43, %kind_43 : i64
+  %inb_44 = scf.select %is43, %ni43, %inb_43 : i64
+  %outb_44 = scf.select %is43, %no43, %outb_43 : i64
+  %name44 = global.load @k44 : buffer
+  %is44 = func.call @same(%key, %name44) : (buffer, buffer) -> (i1)
+  %nb44 = scalar.constant 147456 : i64
+  %nk44 = scalar.constant 0 : i64
+  %ni44 = scalar.constant 4 : i64
+  %no44 = scalar.constant 2 : i64
+  %blocks_45 = scf.select %is44, %nb44, %blocks_44 : i64
+  %kind_45 = scf.select %is44, %nk44, %kind_44 : i64
+  %inb_45 = scf.select %is44, %ni44, %inb_44 : i64
+  %outb_45 = scf.select %is44, %no44, %outb_44 : i64
+  %name45 = global.load @k45 : buffer
+  %is45 = func.call @same(%key, %name45) : (buffer, buffer) -> (i1)
+  %nb45 = scalar.constant 294912 : i64
+  %nk45 = scalar.constant 0 : i64
+  %ni45 = scalar.constant 4 : i64
+  %no45 = scalar.constant 2 : i64
+  %blocks_46 = scf.select %is45, %nb45, %blocks_45 : i64
+  %kind_46 = scf.select %is45, %nk45, %kind_45 : i64
+  %inb_46 = scf.select %is45, %ni45, %inb_45 : i64
+  %outb_46 = scf.select %is45, %no45, %outb_45 : i64
+  %name46 = global.load @k46 : buffer
+  %is46 = func.call @same(%key, %name46) : (buffer, buffer) -> (i1)
+  %nb46 = scalar.constant 147456 : i64
+  %nk46 = scalar.constant 0 : i64
+  %ni46 = scalar.constant 4 : i64
+  %no46 = scalar.constant 2 : i64
+  %blocks_47 = scf.select %is46, %nb46, %blocks_46 : i64
+  %kind_47 = scf.select %is46, %nk46, %kind_46 : i64
+  %inb_47 = scf.select %is46, %ni46, %inb_46 : i64
+  %outb_47 = scf.select %is46, %no46, %outb_46 : i64
+  %name47 = global.load @k47 : buffer
+  %is47 = func.call @same(%key, %name47) : (buffer, buffer) -> (i1)
+  %nb47 = scalar.constant 147456 : i64
+  %nk47 = scalar.constant 0 : i64
+  %ni47 = scalar.constant 4 : i64
+  %no47 = scalar.constant 2 : i64
+  %blocks_48 = scf.select %is47, %nb47, %blocks_47 : i64
+  %kind_48 = scf.select %is47, %nk47, %kind_47 : i64
+  %inb_48 = scf.select %is47, %ni47, %inb_47 : i64
+  %outb_48 = scf.select %is47, %no47, %outb_47 : i64
+  %name48 = global.load @k48 : buffer
+  %is48 = func.call @same(%key, %name48) : (buffer, buffer) -> (i1)
+  %nb48 = scalar.constant 294912 : i64
+  %nk48 = scalar.constant 0 : i64
+  %ni48 = scalar.constant 4 : i64
+  %no48 = scalar.constant 2 : i64
+  %blocks_49 = scf.select %is48, %nb48, %blocks_48 : i64
+  %kind_49 = scf.select %is48, %nk48, %kind_48 : i64
+  %inb_49 = scf.select %is48, %ni48, %inb_48 : i64
+  %outb_49 = scf.select %is48, %no48, %outb_48 : i64
+  %name49 = global.load @k49 : buffer
+  %is49 = func.call @same(%key, %name49) : (buffer, buffer) -> (i1)
+  %nb49 = scalar.constant 147456 : i64
+  %nk49 = scalar.constant 0 : i64
+  %ni49 = scalar.constant 4 : i64
+  %no49 = scalar.constant 2 : i64
+  %blocks_50 = scf.select %is49, %nb49, %blocks_49 : i64
+  %kind_50 = scf.select %is49, %nk49, %kind_49 : i64
+  %inb_50 = scf.select %is49, %ni49, %inb_49 : i64
+  %outb_50 = scf.select %is49, %no49, %outb_49 : i64
+  %name50 = global.load @k50 : buffer
+  %is50 = func.call @same(%key, %name50) : (buffer, buffer) -> (i1)
+  %nb50 = scalar.constant 147456 : i64
+  %nk50 = scalar.constant 0 : i64
+  %ni50 = scalar.constant 4 : i64
+  %no50 = scalar.constant 2 : i64
+  %blocks_51 = scf.select %is50, %nb50, %blocks_50 : i64
+  %kind_51 = scf.select %is50, %nk50, %kind_50 : i64
+  %inb_51 = scf.select %is50, %ni50, %inb_50 : i64
+  %outb_51 = scf.select %is50, %no50, %outb_50 : i64
+  %name51 = global.load @k51 : buffer
+  %is51 = func.call @same(%key, %name51) : (buffer, buffer) -> (i1)
+  %nb51 = scalar.constant 294912 : i64
+  %nk51 = scalar.constant 0 : i64
+  %ni51 = scalar.constant 4 : i64
+  %no51 = scalar.constant 2 : i64
+  %blocks_52 = scf.select %is51, %nb51, %blocks_51 : i64
+  %kind_52 = scf.select %is51, %nk51, %kind_51 : i64
+  %inb_52 = scf.select %is51, %ni51, %inb_51 : i64
+  %outb_52 = scf.select %is51, %no51, %outb_51 : i64
+  %name52 = global.load @k52 : buffer
+  %is52 = func.call @same(%key, %name52) : (buffer, buffer) -> (i1)
+  %nb52 = scalar.constant 147456 : i64
+  %nk52 = scalar.constant 0 : i64
+  %ni52 = scalar.constant 4 : i64
+  %no52 = scalar.constant 2 : i64
+  %blocks_53 = scf.select %is52, %nb52, %blocks_52 : i64
+  %kind_53 = scf.select %is52, %nk52, %kind_52 : i64
+  %inb_53 = scf.select %is52, %ni52, %inb_52 : i64
+  %outb_53 = scf.select %is52, %no52, %outb_52 : i64
+  %name53 = global.load @k53 : buffer
+  %is53 = func.call @same(%key, %name53) : (buffer, buffer) -> (i1)
+  %nb53 = scalar.constant 147456 : i64
+  %nk53 = scalar.constant 0 : i64
+  %ni53 = scalar.constant 4 : i64
+  %no53 = scalar.constant 2 : i64
+  %blocks_54 = scf.select %is53, %nb53, %blocks_53 : i64
+  %kind_54 = scf.select %is53, %nk53, %kind_53 : i64
+  %inb_54 = scf.select %is53, %ni53, %inb_53 : i64
+  %outb_54 = scf.select %is53, %no53, %outb_53 : i64
+  %name54 = global.load @k54 : buffer
+  %is54 = func.call @same(%key, %name54) : (buffer, buffer) -> (i1)
+  %nb54 = scalar.constant 294912 : i64
+  %nk54 = scalar.constant 0 : i64
+  %ni54 = scalar.constant 4 : i64
+  %no54 = scalar.constant 2 : i64
+  %blocks_55 = scf.select %is54, %nb54, %blocks_54 : i64
+  %kind_55 = scf.select %is54, %nk54, %kind_54 : i64
+  %inb_55 = scf.select %is54, %ni54, %inb_54 : i64
+  %outb_55 = scf.select %is54, %no54, %outb_54 : i64
+  %name55 = global.load @k55 : buffer
+  %is55 = func.call @same(%key, %name55) : (buffer, buffer) -> (i1)
+  %nb55 = scalar.constant 294912 : i64
+  %nk55 = scalar.constant 0 : i64
+  %ni55 = scalar.constant 4 : i64
+  %no55 = scalar.constant 2 : i64
+  %blocks_56 = scf.select %is55, %nb55, %blocks_55 : i64
+  %kind_56 = scf.select %is55, %nk55, %kind_55 : i64
+  %inb_56 = scf.select %is55, %ni55, %inb_55 : i64
+  %outb_56 = scf.select %is55, %no55, %outb_55 : i64
+  %name56 = global.load @k56 : buffer
+  %is56 = func.call @same(%key, %name56) : (buffer, buffer) -> (i1)
+  %nb56 = scalar.constant 147456 : i64
+  %nk56 = scalar.constant 0 : i64
+  %ni56 = scalar.constant 4 : i64
+  %no56 = scalar.constant 2 : i64
+  %blocks_57 = scf.select %is56, %nb56, %blocks_56 : i64
+  %kind_57 = scf.select %is56, %nk56, %kind_56 : i64
+  %inb_57 = scf.select %is56, %ni56, %inb_56 : i64
+  %outb_57 = scf.select %is56, %no56, %outb_56 : i64
+  %name57 = global.load @k57 : buffer
+  %is57 = func.call @same(%key, %name57) : (buffer, buffer) -> (i1)
+  %nb57 = scalar.constant 147456 : i64
+  %nk57 = scalar.constant 0 : i64
+  %ni57 = scalar.constant 4 : i64
+  %no57 = scalar.constant 2 : i64
+  %blocks_58 = scf.select %is57, %nb57, %blocks_57 : i64
+  %kind_58 = scf.select %is57, %nk57, %kind_57 : i64
+  %inb_58 = scf.select %is57, %ni57, %inb_57 : i64
+  %outb_58 = scf.select %is57, %no57, %outb_57 : i64
+  %name58 = global.load @k58 : buffer
+  %is58 = func.call @same(%key, %name58) : (buffer, buffer) -> (i1)
+  %nb58 = scalar.constant 294912 : i64
+  %nk58 = scalar.constant 0 : i64
+  %ni58 = scalar.constant 4 : i64
+  %no58 = scalar.constant 2 : i64
+  %blocks_59 = scf.select %is58, %nb58, %blocks_58 : i64
+  %kind_59 = scf.select %is58, %nk58, %kind_58 : i64
+  %inb_59 = scf.select %is58, %ni58, %inb_58 : i64
+  %outb_59 = scf.select %is58, %no58, %outb_58 : i64
+  %name59 = global.load @k59 : buffer
+  %is59 = func.call @same(%key, %name59) : (buffer, buffer) -> (i1)
+  %nb59 = scalar.constant 147456 : i64
+  %nk59 = scalar.constant 0 : i64
+  %ni59 = scalar.constant 4 : i64
+  %no59 = scalar.constant 2 : i64
+  %blocks_60 = scf.select %is59, %nb59, %blocks_59 : i64
+  %kind_60 = scf.select %is59, %nk59, %kind_59 : i64
+  %inb_60 = scf.select %is59, %ni59, %inb_59 : i64
+  %outb_60 = scf.select %is59, %no59, %outb_59 : i64
+  %name60 = global.load @k60 : buffer
+  %is60 = func.call @same(%key, %name60) : (buffer, buffer) -> (i1)
+  %nb60 = scalar.constant 147456 : i64
+  %nk60 = scalar.constant 0 : i64
+  %ni60 = scalar.constant 4 : i64
+  %no60 = scalar.constant 2 : i64
+  %blocks_61 = scf.select %is60, %nb60, %blocks_60 : i64
+  %kind_61 = scf.select %is60, %nk60, %kind_60 : i64
+  %inb_61 = scf.select %is60, %ni60, %inb_60 : i64
+  %outb_61 = scf.select %is60, %no60, %outb_60 : i64
+  %name61 = global.load @k61 : buffer
+  %is61 = func.call @same(%key, %name61) : (buffer, buffer) -> (i1)
+  %nb61 = scalar.constant 294912 : i64
+  %nk61 = scalar.constant 0 : i64
+  %ni61 = scalar.constant 4 : i64
+  %no61 = scalar.constant 2 : i64
+  %blocks_62 = scf.select %is61, %nb61, %blocks_61 : i64
+  %kind_62 = scf.select %is61, %nk61, %kind_61 : i64
+  %inb_62 = scf.select %is61, %ni61, %inb_61 : i64
+  %outb_62 = scf.select %is61, %no61, %outb_61 : i64
+  %name62 = global.load @k62 : buffer
+  %is62 = func.call @same(%key, %name62) : (buffer, buffer) -> (i1)
+  %nb62 = scalar.constant 147456 : i64
+  %nk62 = scalar.constant 0 : i64
+  %ni62 = scalar.constant 4 : i64
+  %no62 = scalar.constant 2 : i64
+  %blocks_63 = scf.select %is62, %nb62, %blocks_62 : i64
+  %kind_63 = scf.select %is62, %nk62, %kind_62 : i64
+  %inb_63 = scf.select %is62, %ni62, %inb_62 : i64
+  %outb_63 = scf.select %is62, %no62, %outb_62 : i64
+  %name63 = global.load @k63 : buffer
+  %is63 = func.call @same(%key, %name63) : (buffer, buffer) -> (i1)
+  %nb63 = scalar.constant 147456 : i64
+  %nk63 = scalar.constant 0 : i64
+  %ni63 = scalar.constant 4 : i64
+  %no63 = scalar.constant 2 : i64
+  %blocks_64 = scf.select %is63, %nb63, %blocks_63 : i64
+  %kind_64 = scf.select %is63, %nk63, %kind_63 : i64
+  %inb_64 = scf.select %is63, %ni63, %inb_63 : i64
+  %outb_64 = scf.select %is63, %no63, %outb_63 : i64
+  %name64 = global.load @k64 : buffer
+  %is64 = func.call @same(%key, %name64) : (buffer, buffer) -> (i1)
+  %nb64 = scalar.constant 294912 : i64
+  %nk64 = scalar.constant 0 : i64
+  %ni64 = scalar.constant 4 : i64
+  %no64 = scalar.constant 2 : i64
+  %blocks_65 = scf.select %is64, %nb64, %blocks_64 : i64
+  %kind_65 = scf.select %is64, %nk64, %kind_64 : i64
+  %inb_65 = scf.select %is64, %ni64, %inb_64 : i64
+  %outb_65 = scf.select %is64, %no64, %outb_64 : i64
+  %name65 = global.load @k65 : buffer
+  %is65 = func.call @same(%key, %name65) : (buffer, buffer) -> (i1)
+  %nb65 = scalar.constant 147456 : i64
+  %nk65 = scalar.constant 0 : i64
+  %ni65 = scalar.constant 4 : i64
+  %no65 = scalar.constant 2 : i64
+  %blocks_66 = scf.select %is65, %nb65, %blocks_65 : i64
+  %kind_66 = scf.select %is65, %nk65, %kind_65 : i64
+  %inb_66 = scf.select %is65, %ni65, %inb_65 : i64
+  %outb_66 = scf.select %is65, %no65, %outb_65 : i64
+  %name66 = global.load @k66 : buffer
+  %is66 = func.call @same(%key, %name66) : (buffer, buffer) -> (i1)
+  %nb66 = scalar.constant 147456 : i64
+  %nk66 = scalar.constant 0 : i64
+  %ni66 = scalar.constant 4 : i64
+  %no66 = scalar.constant 2 : i64
+  %blocks_67 = scf.select %is66, %nb66, %blocks_66 : i64
+  %kind_67 = scf.select %is66, %nk66, %kind_66 : i64
+  %inb_67 = scf.select %is66, %ni66, %inb_66 : i64
+  %outb_67 = scf.select %is66, %no66, %outb_66 : i64
+  %name67 = global.load @k67 : buffer
+  %is67 = func.call @same(%key, %name67) : (buffer, buffer) -> (i1)
+  %nb67 = scalar.constant 294912 : i64
+  %nk67 = scalar.constant 0 : i64
+  %ni67 = scalar.constant 4 : i64
+  %no67 = scalar.constant 2 : i64
+  %blocks_68 = scf.select %is67, %nb67, %blocks_67 : i64
+  %kind_68 = scf.select %is67, %nk67, %kind_67 : i64
+  %inb_68 = scf.select %is67, %ni67, %inb_67 : i64
+  %outb_68 = scf.select %is67, %no67, %outb_67 : i64
+  %name68 = global.load @k68 : buffer
+  %is68 = func.call @same(%key, %name68) : (buffer, buffer) -> (i1)
+  %nb68 = scalar.constant 294912 : i64
+  %nk68 = scalar.constant 0 : i64
+  %ni68 = scalar.constant 4 : i64
+  %no68 = scalar.constant 2 : i64
+  %blocks_69 = scf.select %is68, %nb68, %blocks_68 : i64
+  %kind_69 = scf.select %is68, %nk68, %kind_68 : i64
+  %inb_69 = scf.select %is68, %ni68, %inb_68 : i64
+  %outb_69 = scf.select %is68, %no68, %outb_68 : i64
+  %name69 = global.load @k69 : buffer
+  %is69 = func.call @same(%key, %name69) : (buffer, buffer) -> (i1)
+  %nb69 = scalar.constant 147456 : i64
+  %nk69 = scalar.constant 0 : i64
+  %ni69 = scalar.constant 4 : i64
+  %no69 = scalar.constant 2 : i64
+  %blocks_70 = scf.select %is69, %nb69, %blocks_69 : i64
+  %kind_70 = scf.select %is69, %nk69, %kind_69 : i64
+  %inb_70 = scf.select %is69, %ni69, %inb_69 : i64
+  %outb_70 = scf.select %is69, %no69, %outb_69 : i64
+  %name70 = global.load @k70 : buffer
+  %is70 = func.call @same(%key, %name70) : (buffer, buffer) -> (i1)
+  %nb70 = scalar.constant 147456 : i64
+  %nk70 = scalar.constant 0 : i64
+  %ni70 = scalar.constant 4 : i64
+  %no70 = scalar.constant 2 : i64
+  %blocks_71 = scf.select %is70, %nb70, %blocks_70 : i64
+  %kind_71 = scf.select %is70, %nk70, %kind_70 : i64
+  %inb_71 = scf.select %is70, %ni70, %inb_70 : i64
+  %outb_71 = scf.select %is70, %no70, %outb_70 : i64
+  %name71 = global.load @k71 : buffer
+  %is71 = func.call @same(%key, %name71) : (buffer, buffer) -> (i1)
+  %nb71 = scalar.constant 294912 : i64
+  %nk71 = scalar.constant 0 : i64
+  %ni71 = scalar.constant 4 : i64
+  %no71 = scalar.constant 2 : i64
+  %blocks_72 = scf.select %is71, %nb71, %blocks_71 : i64
+  %kind_72 = scf.select %is71, %nk71, %kind_71 : i64
+  %inb_72 = scf.select %is71, %ni71, %inb_71 : i64
+  %outb_72 = scf.select %is71, %no71, %outb_71 : i64
+  %name72 = global.load @k72 : buffer
+  %is72 = func.call @same(%key, %name72) : (buffer, buffer) -> (i1)
+  %nb72 = scalar.constant 147456 : i64
+  %nk72 = scalar.constant 0 : i64
+  %ni72 = scalar.constant 4 : i64
+  %no72 = scalar.constant 2 : i64
+  %blocks_73 = scf.select %is72, %nb72, %blocks_72 : i64
+  %kind_73 = scf.select %is72, %nk72, %kind_72 : i64
+  %inb_73 = scf.select %is72, %ni72, %inb_72 : i64
+  %outb_73 = scf.select %is72, %no72, %outb_72 : i64
+  %name73 = global.load @k73 : buffer
+  %is73 = func.call @same(%key, %name73) : (buffer, buffer) -> (i1)
+  %nb73 = scalar.constant 147456 : i64
+  %nk73 = scalar.constant 0 : i64
+  %ni73 = scalar.constant 4 : i64
+  %no73 = scalar.constant 2 : i64
+  %blocks_74 = scf.select %is73, %nb73, %blocks_73 : i64
+  %kind_74 = scf.select %is73, %nk73, %kind_73 : i64
+  %inb_74 = scf.select %is73, %ni73, %inb_73 : i64
+  %outb_74 = scf.select %is73, %no73, %outb_73 : i64
+  %name74 = global.load @k74 : buffer
+  %is74 = func.call @same(%key, %name74) : (buffer, buffer) -> (i1)
+  %nb74 = scalar.constant 294912 : i64
+  %nk74 = scalar.constant 0 : i64
+  %ni74 = scalar.constant 4 : i64
+  %no74 = scalar.constant 2 : i64
+  %blocks_75 = scf.select %is74, %nb74, %blocks_74 : i64
+  %kind_75 = scf.select %is74, %nk74, %kind_74 : i64
+  %inb_75 = scf.select %is74, %ni74, %inb_74 : i64
+  %outb_75 = scf.select %is74, %no74, %outb_74 : i64
+  %name75 = global.load @k75 : buffer
+  %is75 = func.call @same(%key, %name75) : (buffer, buffer) -> (i1)
+  %nb75 = scalar.constant 147456 : i64
+  %nk75 = scalar.constant 0 : i64
+  %ni75 = scalar.constant 4 : i64
+  %no75 = scalar.constant 2 : i64
+  %blocks_76 = scf.select %is75, %nb75, %blocks_75 : i64
+  %kind_76 = scf.select %is75, %nk75, %kind_75 : i64
+  %inb_76 = scf.select %is75, %ni75, %inb_75 : i64
+  %outb_76 = scf.select %is75, %no75, %outb_75 : i64
+  %name76 = global.load @k76 : buffer
+  %is76 = func.call @same(%key, %name76) : (buffer, buffer) -> (i1)
+  %nb76 = scalar.constant 147456 : i64
+  %nk76 = scalar.constant 0 : i64
+  %ni76 = scalar.constant 4 : i64
+  %no76 = scalar.constant 2 : i64
+  %blocks_77 = scf.select %is76, %nb76, %blocks_76 : i64
+  %kind_77 = scf.select %is76, %nk76, %kind_76 : i64
+  %inb_77 = scf.select %is76, %ni76, %inb_76 : i64
+  %outb_77 = scf.select %is76, %no76, %outb_76 : i64
+  %name77 = global.load @k77 : buffer
+  %is77 = func.call @same(%key, %name77) : (buffer, buffer) -> (i1)
+  %nb77 = scalar.constant 294912 : i64
+  %nk77 = scalar.constant 0 : i64
+  %ni77 = scalar.constant 4 : i64
+  %no77 = scalar.constant 2 : i64
+  %blocks_78 = scf.select %is77, %nb77, %blocks_77 : i64
+  %kind_78 = scf.select %is77, %nk77, %kind_77 : i64
+  %inb_78 = scf.select %is77, %ni77, %inb_77 : i64
+  %outb_78 = scf.select %is77, %no77, %outb_77 : i64
+  %name78 = global.load @k78 : buffer
+  %is78 = func.call @same(%key, %name78) : (buffer, buffer) -> (i1)
+  %nb78 = scalar.constant 147456 : i64
+  %nk78 = scalar.constant 0 : i64
+  %ni78 = scalar.constant 4 : i64
+  %no78 = scalar.constant 2 : i64
+  %blocks_79 = scf.select %is78, %nb78, %blocks_78 : i64
+  %kind_79 = scf.select %is78, %nk78, %kind_78 : i64
+  %inb_79 = scf.select %is78, %ni78, %inb_78 : i64
+  %outb_79 = scf.select %is78, %no78, %outb_78 : i64
+  %name79 = global.load @k79 : buffer
+  %is79 = func.call @same(%key, %name79) : (buffer, buffer) -> (i1)
+  %nb79 = scalar.constant 147456 : i64
+  %nk79 = scalar.constant 0 : i64
+  %ni79 = scalar.constant 4 : i64
+  %no79 = scalar.constant 2 : i64
+  %blocks_80 = scf.select %is79, %nb79, %blocks_79 : i64
+  %kind_80 = scf.select %is79, %nk79, %kind_79 : i64
+  %inb_80 = scf.select %is79, %ni79, %inb_79 : i64
+  %outb_80 = scf.select %is79, %no79, %outb_79 : i64
+  %name80 = global.load @k80 : buffer
+  %is80 = func.call @same(%key, %name80) : (buffer, buffer) -> (i1)
+  %nb80 = scalar.constant 294912 : i64
+  %nk80 = scalar.constant 0 : i64
+  %ni80 = scalar.constant 4 : i64
+  %no80 = scalar.constant 2 : i64
+  %blocks_81 = scf.select %is80, %nb80, %blocks_80 : i64
+  %kind_81 = scf.select %is80, %nk80, %kind_80 : i64
+  %inb_81 = scf.select %is80, %ni80, %inb_80 : i64
+  %outb_81 = scf.select %is80, %no80, %outb_80 : i64
+  %name81 = global.load @k81 : buffer
+  %is81 = func.call @same(%key, %name81) : (buffer, buffer) -> (i1)
+  %nb81 = scalar.constant 294912 : i64
+  %nk81 = scalar.constant 0 : i64
+  %ni81 = scalar.constant 4 : i64
+  %no81 = scalar.constant 2 : i64
+  %blocks_82 = scf.select %is81, %nb81, %blocks_81 : i64
+  %kind_82 = scf.select %is81, %nk81, %kind_81 : i64
+  %inb_82 = scf.select %is81, %ni81, %inb_81 : i64
+  %outb_82 = scf.select %is81, %no81, %outb_81 : i64
+  %name82 = global.load @k82 : buffer
+  %is82 = func.call @same(%key, %name82) : (buffer, buffer) -> (i1)
+  %nb82 = scalar.constant 147456 : i64
+  %nk82 = scalar.constant 0 : i64
+  %ni82 = scalar.constant 4 : i64
+  %no82 = scalar.constant 2 : i64
+  %blocks_83 = scf.select %is82, %nb82, %blocks_82 : i64
+  %kind_83 = scf.select %is82, %nk82, %kind_82 : i64
+  %inb_83 = scf.select %is82, %ni82, %inb_82 : i64
+  %outb_83 = scf.select %is82, %no82, %outb_82 : i64
+  %name83 = global.load @k83 : buffer
+  %is83 = func.call @same(%key, %name83) : (buffer, buffer) -> (i1)
+  %nb83 = scalar.constant 147456 : i64
+  %nk83 = scalar.constant 0 : i64
+  %ni83 = scalar.constant 4 : i64
+  %no83 = scalar.constant 2 : i64
+  %blocks_84 = scf.select %is83, %nb83, %blocks_83 : i64
+  %kind_84 = scf.select %is83, %nk83, %kind_83 : i64
+  %inb_84 = scf.select %is83, %ni83, %inb_83 : i64
+  %outb_84 = scf.select %is83, %no83, %outb_83 : i64
+  %name84 = global.load @k84 : buffer
+  %is84 = func.call @same(%key, %name84) : (buffer, buffer) -> (i1)
+  %nb84 = scalar.constant 294912 : i64
+  %nk84 = scalar.constant 0 : i64
+  %ni84 = scalar.constant 4 : i64
+  %no84 = scalar.constant 2 : i64
+  %blocks_85 = scf.select %is84, %nb84, %blocks_84 : i64
+  %kind_85 = scf.select %is84, %nk84, %kind_84 : i64
+  %inb_85 = scf.select %is84, %ni84, %inb_84 : i64
+  %outb_85 = scf.select %is84, %no84, %outb_84 : i64
+  %name85 = global.load @k85 : buffer
+  %is85 = func.call @same(%key, %name85) : (buffer, buffer) -> (i1)
+  %nb85 = scalar.constant 147456 : i64
+  %nk85 = scalar.constant 0 : i64
+  %ni85 = scalar.constant 4 : i64
+  %no85 = scalar.constant 2 : i64
+  %blocks_86 = scf.select %is85, %nb85, %blocks_85 : i64
+  %kind_86 = scf.select %is85, %nk85, %kind_85 : i64
+  %inb_86 = scf.select %is85, %ni85, %inb_85 : i64
+  %outb_86 = scf.select %is85, %no85, %outb_85 : i64
+  %name86 = global.load @k86 : buffer
+  %is86 = func.call @same(%key, %name86) : (buffer, buffer) -> (i1)
+  %nb86 = scalar.constant 147456 : i64
+  %nk86 = scalar.constant 0 : i64
+  %ni86 = scalar.constant 4 : i64
+  %no86 = scalar.constant 2 : i64
+  %blocks_87 = scf.select %is86, %nb86, %blocks_86 : i64
+  %kind_87 = scf.select %is86, %nk86, %kind_86 : i64
+  %inb_87 = scf.select %is86, %ni86, %inb_86 : i64
+  %outb_87 = scf.select %is86, %no86, %outb_86 : i64
+  %name87 = global.load @k87 : buffer
+  %is87 = func.call @same(%key, %name87) : (buffer, buffer) -> (i1)
+  %nb87 = scalar.constant 294912 : i64
+  %nk87 = scalar.constant 0 : i64
+  %ni87 = scalar.constant 4 : i64
+  %no87 = scalar.constant 2 : i64
+  %blocks_88 = scf.select %is87, %nb87, %blocks_87 : i64
+  %kind_88 = scf.select %is87, %nk87, %kind_87 : i64
+  %inb_88 = scf.select %is87, %ni87, %inb_87 : i64
+  %outb_88 = scf.select %is87, %no87, %outb_87 : i64
+  %name88 = global.load @k88 : buffer
+  %is88 = func.call @same(%key, %name88) : (buffer, buffer) -> (i1)
+  %nb88 = scalar.constant 147456 : i64
+  %nk88 = scalar.constant 0 : i64
+  %ni88 = scalar.constant 4 : i64
+  %no88 = scalar.constant 2 : i64
+  %blocks_89 = scf.select %is88, %nb88, %blocks_88 : i64
+  %kind_89 = scf.select %is88, %nk88, %kind_88 : i64
+  %inb_89 = scf.select %is88, %ni88, %inb_88 : i64
+  %outb_89 = scf.select %is88, %no88, %outb_88 : i64
+  %name89 = global.load @k89 : buffer
+  %is89 = func.call @same(%key, %name89) : (buffer, buffer) -> (i1)
+  %nb89 = scalar.constant 147456 : i64
+  %nk89 = scalar.constant 0 : i64
+  %ni89 = scalar.constant 4 : i64
+  %no89 = scalar.constant 2 : i64
+  %blocks_90 = scf.select %is89, %nb89, %blocks_89 : i64
+  %kind_90 = scf.select %is89, %nk89, %kind_89 : i64
+  %inb_90 = scf.select %is89, %ni89, %inb_89 : i64
+  %outb_90 = scf.select %is89, %no89, %outb_89 : i64
+  %name90 = global.load @k90 : buffer
+  %is90 = func.call @same(%key, %name90) : (buffer, buffer) -> (i1)
+  %nb90 = scalar.constant 294912 : i64
+  %nk90 = scalar.constant 0 : i64
+  %ni90 = scalar.constant 4 : i64
+  %no90 = scalar.constant 2 : i64
+  %blocks_91 = scf.select %is90, %nb90, %blocks_90 : i64
+  %kind_91 = scf.select %is90, %nk90, %kind_90 : i64
+  %inb_91 = scf.select %is90, %ni90, %inb_90 : i64
+  %outb_91 = scf.select %is90, %no90, %outb_90 : i64
+  %name91 = global.load @k91 : buffer
+  %is91 = func.call @same(%key, %name91) : (buffer, buffer) -> (i1)
+  %nb91 = scalar.constant 147456 : i64
+  %nk91 = scalar.constant 0 : i64
+  %ni91 = scalar.constant 4 : i64
+  %no91 = scalar.constant 2 : i64
+  %blocks_92 = scf.select %is91, %nb91, %blocks_91 : i64
+  %kind_92 = scf.select %is91, %nk91, %kind_91 : i64
+  %inb_92 = scf.select %is91, %ni91, %inb_91 : i64
+  %outb_92 = scf.select %is91, %no91, %outb_91 : i64
+  %name92 = global.load @k92 : buffer
+  %is92 = func.call @same(%key, %name92) : (buffer, buffer) -> (i1)
+  %nb92 = scalar.constant 147456 : i64
+  %nk92 = scalar.constant 0 : i64
+  %ni92 = scalar.constant 4 : i64
+  %no92 = scalar.constant 2 : i64
+  %blocks_93 = scf.select %is92, %nb92, %blocks_92 : i64
+  %kind_93 = scf.select %is92, %nk92, %kind_92 : i64
+  %inb_93 = scf.select %is92, %ni92, %inb_92 : i64
+  %outb_93 = scf.select %is92, %no92, %outb_92 : i64
+  %name93 = global.load @k93 : buffer
+  %is93 = func.call @same(%key, %name93) : (buffer, buffer) -> (i1)
+  %nb93 = scalar.constant 294912 : i64
+  %nk93 = scalar.constant 0 : i64
+  %ni93 = scalar.constant 4 : i64
+  %no93 = scalar.constant 2 : i64
+  %blocks_94 = scf.select %is93, %nb93, %blocks_93 : i64
+  %kind_94 = scf.select %is93, %nk93, %kind_93 : i64
+  %inb_94 = scf.select %is93, %ni93, %inb_93 : i64
+  %outb_94 = scf.select %is93, %no93, %outb_93 : i64
+  %name94 = global.load @k94 : buffer
+  %is94 = func.call @same(%key, %name94) : (buffer, buffer) -> (i1)
+  %nb94 = scalar.constant 294912 : i64
+  %nk94 = scalar.constant 0 : i64
+  %ni94 = scalar.constant 4 : i64
+  %no94 = scalar.constant 2 : i64
+  %blocks_95 = scf.select %is94, %nb94, %blocks_94 : i64
+  %kind_95 = scf.select %is94, %nk94, %kind_94 : i64
+  %inb_95 = scf.select %is94, %ni94, %inb_94 : i64
+  %outb_95 = scf.select %is94, %no94, %outb_94 : i64
+  %name95 = global.load @k95 : buffer
+  %is95 = func.call @same(%key, %name95) : (buffer, buffer) -> (i1)
+  %nb95 = scalar.constant 147456 : i64
+  %nk95 = scalar.constant 0 : i64
+  %ni95 = scalar.constant 4 : i64
+  %no95 = scalar.constant 2 : i64
+  %blocks_96 = scf.select %is95, %nb95, %blocks_95 : i64
+  %kind_96 = scf.select %is95, %nk95, %kind_95 : i64
+  %inb_96 = scf.select %is95, %ni95, %inb_95 : i64
+  %outb_96 = scf.select %is95, %no95, %outb_95 : i64
+  %name96 = global.load @k96 : buffer
+  %is96 = func.call @same(%key, %name96) : (buffer, buffer) -> (i1)
+  %nb96 = scalar.constant 147456 : i64
+  %nk96 = scalar.constant 0 : i64
+  %ni96 = scalar.constant 4 : i64
+  %no96 = scalar.constant 2 : i64
+  %blocks_97 = scf.select %is96, %nb96, %blocks_96 : i64
+  %kind_97 = scf.select %is96, %nk96, %kind_96 : i64
+  %inb_97 = scf.select %is96, %ni96, %inb_96 : i64
+  %outb_97 = scf.select %is96, %no96, %outb_96 : i64
+  %name97 = global.load @k97 : buffer
+  %is97 = func.call @same(%key, %name97) : (buffer, buffer) -> (i1)
+  %nb97 = scalar.constant 294912 : i64
+  %nk97 = scalar.constant 0 : i64
+  %ni97 = scalar.constant 4 : i64
+  %no97 = scalar.constant 2 : i64
+  %blocks_98 = scf.select %is97, %nb97, %blocks_97 : i64
+  %kind_98 = scf.select %is97, %nk97, %kind_97 : i64
+  %inb_98 = scf.select %is97, %ni97, %inb_97 : i64
+  %outb_98 = scf.select %is97, %no97, %outb_97 : i64
+  %name98 = global.load @k98 : buffer
+  %is98 = func.call @same(%key, %name98) : (buffer, buffer) -> (i1)
+  %nb98 = scalar.constant 147456 : i64
+  %nk98 = scalar.constant 0 : i64
+  %ni98 = scalar.constant 4 : i64
+  %no98 = scalar.constant 2 : i64
+  %blocks_99 = scf.select %is98, %nb98, %blocks_98 : i64
+  %kind_99 = scf.select %is98, %nk98, %kind_98 : i64
+  %inb_99 = scf.select %is98, %ni98, %inb_98 : i64
+  %outb_99 = scf.select %is98, %no98, %outb_98 : i64
+  %name99 = global.load @k99 : buffer
+  %is99 = func.call @same(%key, %name99) : (buffer, buffer) -> (i1)
+  %nb99 = scalar.constant 147456 : i64
+  %nk99 = scalar.constant 0 : i64
+  %ni99 = scalar.constant 4 : i64
+  %no99 = scalar.constant 2 : i64
+  %blocks_100 = scf.select %is99, %nb99, %blocks_99 : i64
+  %kind_100 = scf.select %is99, %nk99, %kind_99 : i64
+  %inb_100 = scf.select %is99, %ni99, %inb_99 : i64
+  %outb_100 = scf.select %is99, %no99, %outb_99 : i64
+  %name100 = global.load @k100 : buffer
+  %is100 = func.call @same(%key, %name100) : (buffer, buffer) -> (i1)
+  %nb100 = scalar.constant 294912 : i64
+  %nk100 = scalar.constant 0 : i64
+  %ni100 = scalar.constant 4 : i64
+  %no100 = scalar.constant 2 : i64
+  %blocks_101 = scf.select %is100, %nb100, %blocks_100 : i64
+  %kind_101 = scf.select %is100, %nk100, %kind_100 : i64
+  %inb_101 = scf.select %is100, %ni100, %inb_100 : i64
+  %outb_101 = scf.select %is100, %no100, %outb_100 : i64
+  %name101 = global.load @k101 : buffer
+  %is101 = func.call @same(%key, %name101) : (buffer, buffer) -> (i1)
+  %nb101 = scalar.constant 147456 : i64
+  %nk101 = scalar.constant 0 : i64
+  %ni101 = scalar.constant 4 : i64
+  %no101 = scalar.constant 2 : i64
+  %blocks_102 = scf.select %is101, %nb101, %blocks_101 : i64
+  %kind_102 = scf.select %is101, %nk101, %kind_101 : i64
+  %inb_102 = scf.select %is101, %ni101, %inb_101 : i64
+  %outb_102 = scf.select %is101, %no101, %outb_101 : i64
+  %name102 = global.load @k102 : buffer
+  %is102 = func.call @same(%key, %name102) : (buffer, buffer) -> (i1)
+  %nb102 = scalar.constant 147456 : i64
+  %nk102 = scalar.constant 0 : i64
+  %ni102 = scalar.constant 4 : i64
+  %no102 = scalar.constant 2 : i64
+  %blocks_103 = scf.select %is102, %nb102, %blocks_102 : i64
+  %kind_103 = scf.select %is102, %nk102, %kind_102 : i64
+  %inb_103 = scf.select %is102, %ni102, %inb_102 : i64
+  %outb_103 = scf.select %is102, %no102, %outb_102 : i64
+  %name103 = global.load @k103 : buffer
+  %is103 = func.call @same(%key, %name103) : (buffer, buffer) -> (i1)
+  %nb103 = scalar.constant 294912 : i64
+  %nk103 = scalar.constant 0 : i64
+  %ni103 = scalar.constant 4 : i64
+  %no103 = scalar.constant 2 : i64
+  %blocks_104 = scf.select %is103, %nb103, %blocks_103 : i64
+  %kind_104 = scf.select %is103, %nk103, %kind_103 : i64
+  %inb_104 = scf.select %is103, %ni103, %inb_103 : i64
+  %outb_104 = scf.select %is103, %no103, %outb_103 : i64
+  %name104 = global.load @k104 : buffer
+  %is104 = func.call @same(%key, %name104) : (buffer, buffer) -> (i1)
+  %nb104 = scalar.constant 147456 : i64
+  %nk104 = scalar.constant 0 : i64
+  %ni104 = scalar.constant 4 : i64
+  %no104 = scalar.constant 2 : i64
+  %blocks_105 = scf.select %is104, %nb104, %blocks_104 : i64
+  %kind_105 = scf.select %is104, %nk104, %kind_104 : i64
+  %inb_105 = scf.select %is104, %ni104, %inb_104 : i64
+  %outb_105 = scf.select %is104, %no104, %outb_104 : i64
+  %name105 = global.load @k105 : buffer
+  %is105 = func.call @same(%key, %name105) : (buffer, buffer) -> (i1)
+  %nb105 = scalar.constant 147456 : i64
+  %nk105 = scalar.constant 0 : i64
+  %ni105 = scalar.constant 4 : i64
+  %no105 = scalar.constant 2 : i64
+  %blocks_106 = scf.select %is105, %nb105, %blocks_105 : i64
+  %kind_106 = scf.select %is105, %nk105, %kind_105 : i64
+  %inb_106 = scf.select %is105, %ni105, %inb_105 : i64
+  %outb_106 = scf.select %is105, %no105, %outb_105 : i64
+  %name106 = global.load @k106 : buffer
+  %is106 = func.call @same(%key, %name106) : (buffer, buffer) -> (i1)
+  %nb106 = scalar.constant 294912 : i64
+  %nk106 = scalar.constant 0 : i64
+  %ni106 = scalar.constant 4 : i64
+  %no106 = scalar.constant 2 : i64
+  %blocks_107 = scf.select %is106, %nb106, %blocks_106 : i64
+  %kind_107 = scf.select %is106, %nk106, %kind_106 : i64
+  %inb_107 = scf.select %is106, %ni106, %inb_106 : i64
+  %outb_107 = scf.select %is106, %no106, %outb_106 : i64
+  %name107 = global.load @k107 : buffer
+  %is107 = func.call @same(%key, %name107) : (buffer, buffer) -> (i1)
+  %nb107 = scalar.constant 294912 : i64
+  %nk107 = scalar.constant 0 : i64
+  %ni107 = scalar.constant 4 : i64
+  %no107 = scalar.constant 2 : i64
+  %blocks_108 = scf.select %is107, %nb107, %blocks_107 : i64
+  %kind_108 = scf.select %is107, %nk107, %kind_107 : i64
+  %inb_108 = scf.select %is107, %ni107, %inb_107 : i64
+  %outb_108 = scf.select %is107, %no107, %outb_107 : i64
+  %name108 = global.load @k108 : buffer
+  %is108 = func.call @same(%key, %name108) : (buffer, buffer) -> (i1)
+  %nb108 = scalar.constant 294912 : i64
+  %nk108 = scalar.constant 0 : i64
+  %ni108 = scalar.constant 4 : i64
+  %no108 = scalar.constant 2 : i64
+  %blocks_109 = scf.select %is108, %nb108, %blocks_108 : i64
+  %kind_109 = scf.select %is108, %nk108, %kind_108 : i64
+  %inb_109 = scf.select %is108, %ni108, %inb_108 : i64
+  %outb_109 = scf.select %is108, %no108, %outb_108 : i64
+  %name109 = global.load @k109 : buffer
+  %is109 = func.call @same(%key, %name109) : (buffer, buffer) -> (i1)
+  %nb109 = scalar.constant 294912 : i64
+  %nk109 = scalar.constant 0 : i64
+  %ni109 = scalar.constant 4 : i64
+  %no109 = scalar.constant 2 : i64
+  %blocks_110 = scf.select %is109, %nb109, %blocks_109 : i64
+  %kind_110 = scf.select %is109, %nk109, %kind_109 : i64
+  %inb_110 = scf.select %is109, %ni109, %inb_109 : i64
+  %outb_110 = scf.select %is109, %no109, %outb_109 : i64
+  %name110 = global.load @k110 : buffer
+  %is110 = func.call @same(%key, %name110) : (buffer, buffer) -> (i1)
+  %nb110 = scalar.constant 294912 : i64
+  %nk110 = scalar.constant 0 : i64
+  %ni110 = scalar.constant 4 : i64
+  %no110 = scalar.constant 2 : i64
+  %blocks_111 = scf.select %is110, %nb110, %blocks_110 : i64
+  %kind_111 = scf.select %is110, %nk110, %kind_110 : i64
+  %inb_111 = scf.select %is110, %ni110, %inb_110 : i64
+  %outb_111 = scf.select %is110, %no110, %outb_110 : i64
+  %name111 = global.load @k111 : buffer
+  %is111 = func.call @same(%key, %name111) : (buffer, buffer) -> (i1)
+  %nb111 = scalar.constant 294912 : i64
+  %nk111 = scalar.constant 0 : i64
+  %ni111 = scalar.constant 4 : i64
+  %no111 = scalar.constant 2 : i64
+  %blocks_112 = scf.select %is111, %nb111, %blocks_111 : i64
+  %kind_112 = scf.select %is111, %nk111, %kind_111 : i64
+  %inb_112 = scf.select %is111, %ni111, %inb_111 : i64
+  %outb_112 = scf.select %is111, %no111, %outb_111 : i64
+  %name112 = global.load @k112 : buffer
+  %is112 = func.call @same(%key, %name112) : (buffer, buffer) -> (i1)
+  %nb112 = scalar.constant 294912 : i64
+  %nk112 = scalar.constant 0 : i64
+  %ni112 = scalar.constant 4 : i64
+  %no112 = scalar.constant 2 : i64
+  %blocks_113 = scf.select %is112, %nb112, %blocks_112 : i64
+  %kind_113 = scf.select %is112, %nk112, %kind_112 : i64
+  %inb_113 = scf.select %is112, %ni112, %inb_112 : i64
+  %outb_113 = scf.select %is112, %no112, %outb_112 : i64
+  %name113 = global.load @k113 : buffer
+  %is113 = func.call @same(%key, %name113) : (buffer, buffer) -> (i1)
+  %nb113 = scalar.constant 294912 : i64
+  %nk113 = scalar.constant 0 : i64
+  %ni113 = scalar.constant 4 : i64
+  %no113 = scalar.constant 2 : i64
+  %blocks_114 = scf.select %is113, %nb113, %blocks_113 : i64
+  %kind_114 = scf.select %is113, %nk113, %kind_113 : i64
+  %inb_114 = scf.select %is113, %ni113, %inb_113 : i64
+  %outb_114 = scf.select %is113, %no113, %outb_113 : i64
+  %name114 = global.load @k114 : buffer
+  %is114 = func.call @same(%key, %name114) : (buffer, buffer) -> (i1)
+  %nb114 = scalar.constant 294912 : i64
+  %nk114 = scalar.constant 0 : i64
+  %ni114 = scalar.constant 4 : i64
+  %no114 = scalar.constant 2 : i64
+  %blocks_115 = scf.select %is114, %nb114, %blocks_114 : i64
+  %kind_115 = scf.select %is114, %nk114, %kind_114 : i64
+  %inb_115 = scf.select %is114, %ni114, %inb_114 : i64
+  %outb_115 = scf.select %is114, %no114, %outb_114 : i64
+  %name115 = global.load @k115 : buffer
+  %is115 = func.call @same(%key, %name115) : (buffer, buffer) -> (i1)
+  %nb115 = scalar.constant 294912 : i64
+  %nk115 = scalar.constant 0 : i64
+  %ni115 = scalar.constant 4 : i64
+  %no115 = scalar.constant 2 : i64
+  %blocks_116 = scf.select %is115, %nb115, %blocks_115 : i64
+  %kind_116 = scf.select %is115, %nk115, %kind_115 : i64
+  %inb_116 = scf.select %is115, %ni115, %inb_115 : i64
+  %outb_116 = scf.select %is115, %no115, %outb_115 : i64
+  %name116 = global.load @k116 : buffer
+  %is116 = func.call @same(%key, %name116) : (buffer, buffer) -> (i1)
+  %nb116 = scalar.constant 294912 : i64
+  %nk116 = scalar.constant 0 : i64
+  %ni116 = scalar.constant 4 : i64
+  %no116 = scalar.constant 2 : i64
+  %blocks_117 = scf.select %is116, %nb116, %blocks_116 : i64
+  %kind_117 = scf.select %is116, %nk116, %kind_116 : i64
+  %inb_117 = scf.select %is116, %ni116, %inb_116 : i64
+  %outb_117 = scf.select %is116, %no116, %outb_116 : i64
+  %name117 = global.load @k117 : buffer
+  %is117 = func.call @same(%key, %name117) : (buffer, buffer) -> (i1)
+  %nb117 = scalar.constant 294912 : i64
+  %nk117 = scalar.constant 0 : i64
+  %ni117 = scalar.constant 4 : i64
+  %no117 = scalar.constant 2 : i64
+  %blocks_118 = scf.select %is117, %nb117, %blocks_117 : i64
+  %kind_118 = scf.select %is117, %nk117, %kind_117 : i64
+  %inb_118 = scf.select %is117, %ni117, %inb_117 : i64
+  %outb_118 = scf.select %is117, %no117, %outb_117 : i64
+  %name118 = global.load @k118 : buffer
+  %is118 = func.call @same(%key, %name118) : (buffer, buffer) -> (i1)
+  %nb118 = scalar.constant 147456 : i64
+  %nk118 = scalar.constant 0 : i64
+  %ni118 = scalar.constant 4 : i64
+  %no118 = scalar.constant 2 : i64
+  %blocks_119 = scf.select %is118, %nb118, %blocks_118 : i64
+  %kind_119 = scf.select %is118, %nk118, %kind_118 : i64
+  %inb_119 = scf.select %is118, %ni118, %inb_118 : i64
+  %outb_119 = scf.select %is118, %no118, %outb_118 : i64
+  %name119 = global.load @k119 : buffer
+  %is119 = func.call @same(%key, %name119) : (buffer, buffer) -> (i1)
+  %nb119 = scalar.constant 147456 : i64
+  %nk119 = scalar.constant 0 : i64
+  %ni119 = scalar.constant 4 : i64
+  %no119 = scalar.constant 2 : i64
+  %blocks_120 = scf.select %is119, %nb119, %blocks_119 : i64
+  %kind_120 = scf.select %is119, %nk119, %kind_119 : i64
+  %inb_120 = scf.select %is119, %ni119, %inb_119 : i64
+  %outb_120 = scf.select %is119, %no119, %outb_119 : i64
+  %name120 = global.load @k120 : buffer
+  %is120 = func.call @same(%key, %name120) : (buffer, buffer) -> (i1)
+  %nb120 = scalar.constant 294912 : i64
+  %nk120 = scalar.constant 0 : i64
+  %ni120 = scalar.constant 4 : i64
+  %no120 = scalar.constant 2 : i64
+  %blocks_121 = scf.select %is120, %nb120, %blocks_120 : i64
+  %kind_121 = scf.select %is120, %nk120, %kind_120 : i64
+  %inb_121 = scf.select %is120, %ni120, %inb_120 : i64
+  %outb_121 = scf.select %is120, %no120, %outb_120 : i64
+  %name121 = global.load @k121 : buffer
+  %is121 = func.call @same(%key, %name121) : (buffer, buffer) -> (i1)
+  %nb121 = scalar.constant 147456 : i64
+  %nk121 = scalar.constant 0 : i64
+  %ni121 = scalar.constant 4 : i64
+  %no121 = scalar.constant 2 : i64
+  %blocks_122 = scf.select %is121, %nb121, %blocks_121 : i64
+  %kind_122 = scf.select %is121, %nk121, %kind_121 : i64
+  %inb_122 = scf.select %is121, %ni121, %inb_121 : i64
+  %outb_122 = scf.select %is121, %no121, %outb_121 : i64
+  %name122 = global.load @k122 : buffer
+  %is122 = func.call @same(%key, %name122) : (buffer, buffer) -> (i1)
+  %nb122 = scalar.constant 147456 : i64
+  %nk122 = scalar.constant 0 : i64
+  %ni122 = scalar.constant 4 : i64
+  %no122 = scalar.constant 2 : i64
+  %blocks_123 = scf.select %is122, %nb122, %blocks_122 : i64
+  %kind_123 = scf.select %is122, %nk122, %kind_122 : i64
+  %inb_123 = scf.select %is122, %ni122, %inb_122 : i64
+  %outb_123 = scf.select %is122, %no122, %outb_122 : i64
+  %name123 = global.load @k123 : buffer
+  %is123 = func.call @same(%key, %name123) : (buffer, buffer) -> (i1)
+  %nb123 = scalar.constant 294912 : i64
+  %nk123 = scalar.constant 0 : i64
+  %ni123 = scalar.constant 4 : i64
+  %no123 = scalar.constant 2 : i64
+  %blocks_124 = scf.select %is123, %nb123, %blocks_123 : i64
+  %kind_124 = scf.select %is123, %nk123, %kind_123 : i64
+  %inb_124 = scf.select %is123, %ni123, %inb_123 : i64
+  %outb_124 = scf.select %is123, %no123, %outb_123 : i64
+  %name124 = global.load @k124 : buffer
+  %is124 = func.call @same(%key, %name124) : (buffer, buffer) -> (i1)
+  %nb124 = scalar.constant 147456 : i64
+  %nk124 = scalar.constant 0 : i64
+  %ni124 = scalar.constant 4 : i64
+  %no124 = scalar.constant 2 : i64
+  %blocks_125 = scf.select %is124, %nb124, %blocks_124 : i64
+  %kind_125 = scf.select %is124, %nk124, %kind_124 : i64
+  %inb_125 = scf.select %is124, %ni124, %inb_124 : i64
+  %outb_125 = scf.select %is124, %no124, %outb_124 : i64
+  %name125 = global.load @k125 : buffer
+  %is125 = func.call @same(%key, %name125) : (buffer, buffer) -> (i1)
+  %nb125 = scalar.constant 147456 : i64
+  %nk125 = scalar.constant 0 : i64
+  %ni125 = scalar.constant 4 : i64
+  %no125 = scalar.constant 2 : i64
+  %blocks_126 = scf.select %is125, %nb125, %blocks_125 : i64
+  %kind_126 = scf.select %is125, %nk125, %kind_125 : i64
+  %inb_126 = scf.select %is125, %ni125, %inb_125 : i64
+  %outb_126 = scf.select %is125, %no125, %outb_125 : i64
+  %name126 = global.load @k126 : buffer
+  %is126 = func.call @same(%key, %name126) : (buffer, buffer) -> (i1)
+  %nb126 = scalar.constant 294912 : i64
+  %nk126 = scalar.constant 0 : i64
+  %ni126 = scalar.constant 4 : i64
+  %no126 = scalar.constant 2 : i64
+  %blocks_127 = scf.select %is126, %nb126, %blocks_126 : i64
+  %kind_127 = scf.select %is126, %nk126, %kind_126 : i64
+  %inb_127 = scf.select %is126, %ni126, %inb_126 : i64
+  %outb_127 = scf.select %is126, %no126, %outb_126 : i64
+  %name127 = global.load @k127 : buffer
+  %is127 = func.call @same(%key, %name127) : (buffer, buffer) -> (i1)
+  %nb127 = scalar.constant 147456 : i64
+  %nk127 = scalar.constant 0 : i64
+  %ni127 = scalar.constant 4 : i64
+  %no127 = scalar.constant 2 : i64
+  %blocks_128 = scf.select %is127, %nb127, %blocks_127 : i64
+  %kind_128 = scf.select %is127, %nk127, %kind_127 : i64
+  %inb_128 = scf.select %is127, %ni127, %inb_127 : i64
+  %outb_128 = scf.select %is127, %no127, %outb_127 : i64
+  %name128 = global.load @k128 : buffer
+  %is128 = func.call @same(%key, %name128) : (buffer, buffer) -> (i1)
+  %nb128 = scalar.constant 147456 : i64
+  %nk128 = scalar.constant 0 : i64
+  %ni128 = scalar.constant 4 : i64
+  %no128 = scalar.constant 2 : i64
+  %blocks_129 = scf.select %is128, %nb128, %blocks_128 : i64
+  %kind_129 = scf.select %is128, %nk128, %kind_128 : i64
+  %inb_129 = scf.select %is128, %ni128, %inb_128 : i64
+  %outb_129 = scf.select %is128, %no128, %outb_128 : i64
+  %name129 = global.load @k129 : buffer
+  %is129 = func.call @same(%key, %name129) : (buffer, buffer) -> (i1)
+  %nb129 = scalar.constant 294912 : i64
+  %nk129 = scalar.constant 0 : i64
+  %ni129 = scalar.constant 4 : i64
+  %no129 = scalar.constant 2 : i64
+  %blocks_130 = scf.select %is129, %nb129, %blocks_129 : i64
+  %kind_130 = scf.select %is129, %nk129, %kind_129 : i64
+  %inb_130 = scf.select %is129, %ni129, %inb_129 : i64
+  %outb_130 = scf.select %is129, %no129, %outb_129 : i64
+  %name130 = global.load @k130 : buffer
+  %is130 = func.call @same(%key, %name130) : (buffer, buffer) -> (i1)
+  %nb130 = scalar.constant 294912 : i64
+  %nk130 = scalar.constant 0 : i64
+  %ni130 = scalar.constant 4 : i64
+  %no130 = scalar.constant 2 : i64
+  %blocks_131 = scf.select %is130, %nb130, %blocks_130 : i64
+  %kind_131 = scf.select %is130, %nk130, %kind_130 : i64
+  %inb_131 = scf.select %is130, %ni130, %inb_130 : i64
+  %outb_131 = scf.select %is130, %no130, %outb_130 : i64
+  %name131 = global.load @k131 : buffer
+  %is131 = func.call @same(%key, %name131) : (buffer, buffer) -> (i1)
+  %nb131 = scalar.constant 147456 : i64
+  %nk131 = scalar.constant 0 : i64
+  %ni131 = scalar.constant 4 : i64
+  %no131 = scalar.constant 2 : i64
+  %blocks_132 = scf.select %is131, %nb131, %blocks_131 : i64
+  %kind_132 = scf.select %is131, %nk131, %kind_131 : i64
+  %inb_132 = scf.select %is131, %ni131, %inb_131 : i64
+  %outb_132 = scf.select %is131, %no131, %outb_131 : i64
+  %name132 = global.load @k132 : buffer
+  %is132 = func.call @same(%key, %name132) : (buffer, buffer) -> (i1)
+  %nb132 = scalar.constant 147456 : i64
+  %nk132 = scalar.constant 0 : i64
+  %ni132 = scalar.constant 4 : i64
+  %no132 = scalar.constant 2 : i64
+  %blocks_133 = scf.select %is132, %nb132, %blocks_132 : i64
+  %kind_133 = scf.select %is132, %nk132, %kind_132 : i64
+  %inb_133 = scf.select %is132, %ni132, %inb_132 : i64
+  %outb_133 = scf.select %is132, %no132, %outb_132 : i64
+  %name133 = global.load @k133 : buffer
+  %is133 = func.call @same(%key, %name133) : (buffer, buffer) -> (i1)
+  %nb133 = scalar.constant 294912 : i64
+  %nk133 = scalar.constant 0 : i64
+  %ni133 = scalar.constant 4 : i64
+  %no133 = scalar.constant 2 : i64
+  %blocks_134 = scf.select %is133, %nb133, %blocks_133 : i64
+  %kind_134 = scf.select %is133, %nk133, %kind_133 : i64
+  %inb_134 = scf.select %is133, %ni133, %inb_133 : i64
+  %outb_134 = scf.select %is133, %no133, %outb_133 : i64
+  %name134 = global.load @k134 : buffer
+  %is134 = func.call @same(%key, %name134) : (buffer, buffer) -> (i1)
+  %nb134 = scalar.constant 147456 : i64
+  %nk134 = scalar.constant 0 : i64
+  %ni134 = scalar.constant 4 : i64
+  %no134 = scalar.constant 2 : i64
+  %blocks_135 = scf.select %is134, %nb134, %blocks_134 : i64
+  %kind_135 = scf.select %is134, %nk134, %kind_134 : i64
+  %inb_135 = scf.select %is134, %ni134, %inb_134 : i64
+  %outb_135 = scf.select %is134, %no134, %outb_134 : i64
+  %name135 = global.load @k135 : buffer
+  %is135 = func.call @same(%key, %name135) : (buffer, buffer) -> (i1)
+  %nb135 = scalar.constant 147456 : i64
+  %nk135 = scalar.constant 0 : i64
+  %ni135 = scalar.constant 4 : i64
+  %no135 = scalar.constant 2 : i64
+  %blocks_136 = scf.select %is135, %nb135, %blocks_135 : i64
+  %kind_136 = scf.select %is135, %nk135, %kind_135 : i64
+  %inb_136 = scf.select %is135, %ni135, %inb_135 : i64
+  %outb_136 = scf.select %is135, %no135, %outb_135 : i64
+  %name136 = global.load @k136 : buffer
+  %is136 = func.call @same(%key, %name136) : (buffer, buffer) -> (i1)
+  %nb136 = scalar.constant 294912 : i64
+  %nk136 = scalar.constant 0 : i64
+  %ni136 = scalar.constant 4 : i64
+  %no136 = scalar.constant 2 : i64
+  %blocks_137 = scf.select %is136, %nb136, %blocks_136 : i64
+  %kind_137 = scf.select %is136, %nk136, %kind_136 : i64
+  %inb_137 = scf.select %is136, %ni136, %inb_136 : i64
+  %outb_137 = scf.select %is136, %no136, %outb_136 : i64
+  %name137 = global.load @k137 : buffer
+  %is137 = func.call @same(%key, %name137) : (buffer, buffer) -> (i1)
+  %nb137 = scalar.constant 147456 : i64
+  %nk137 = scalar.constant 0 : i64
+  %ni137 = scalar.constant 4 : i64
+  %no137 = scalar.constant 2 : i64
+  %blocks_138 = scf.select %is137, %nb137, %blocks_137 : i64
+  %kind_138 = scf.select %is137, %nk137, %kind_137 : i64
+  %inb_138 = scf.select %is137, %ni137, %inb_137 : i64
+  %outb_138 = scf.select %is137, %no137, %outb_137 : i64
+  %name138 = global.load @k138 : buffer
+  %is138 = func.call @same(%key, %name138) : (buffer, buffer) -> (i1)
+  %nb138 = scalar.constant 147456 : i64
+  %nk138 = scalar.constant 0 : i64
+  %ni138 = scalar.constant 4 : i64
+  %no138 = scalar.constant 2 : i64
+  %blocks_139 = scf.select %is138, %nb138, %blocks_138 : i64
+  %kind_139 = scf.select %is138, %nk138, %kind_138 : i64
+  %inb_139 = scf.select %is138, %ni138, %inb_138 : i64
+  %outb_139 = scf.select %is138, %no138, %outb_138 : i64
+  %name139 = global.load @k139 : buffer
+  %is139 = func.call @same(%key, %name139) : (buffer, buffer) -> (i1)
+  %nb139 = scalar.constant 294912 : i64
+  %nk139 = scalar.constant 0 : i64
+  %ni139 = scalar.constant 4 : i64
+  %no139 = scalar.constant 2 : i64
+  %blocks_140 = scf.select %is139, %nb139, %blocks_139 : i64
+  %kind_140 = scf.select %is139, %nk139, %kind_139 : i64
+  %inb_140 = scf.select %is139, %ni139, %inb_139 : i64
+  %outb_140 = scf.select %is139, %no139, %outb_139 : i64
+  %name140 = global.load @k140 : buffer
+  %is140 = func.call @same(%key, %name140) : (buffer, buffer) -> (i1)
+  %nb140 = scalar.constant 147456 : i64
+  %nk140 = scalar.constant 0 : i64
+  %ni140 = scalar.constant 4 : i64
+  %no140 = scalar.constant 2 : i64
+  %blocks_141 = scf.select %is140, %nb140, %blocks_140 : i64
+  %kind_141 = scf.select %is140, %nk140, %kind_140 : i64
+  %inb_141 = scf.select %is140, %ni140, %inb_140 : i64
+  %outb_141 = scf.select %is140, %no140, %outb_140 : i64
+  %name141 = global.load @k141 : buffer
+  %is141 = func.call @same(%key, %name141) : (buffer, buffer) -> (i1)
+  %nb141 = scalar.constant 147456 : i64
+  %nk141 = scalar.constant 0 : i64
+  %ni141 = scalar.constant 4 : i64
+  %no141 = scalar.constant 2 : i64
+  %blocks_142 = scf.select %is141, %nb141, %blocks_141 : i64
+  %kind_142 = scf.select %is141, %nk141, %kind_141 : i64
+  %inb_142 = scf.select %is141, %ni141, %inb_141 : i64
+  %outb_142 = scf.select %is141, %no141, %outb_141 : i64
+  %name142 = global.load @k142 : buffer
+  %is142 = func.call @same(%key, %name142) : (buffer, buffer) -> (i1)
+  %nb142 = scalar.constant 294912 : i64
+  %nk142 = scalar.constant 0 : i64
+  %ni142 = scalar.constant 4 : i64
+  %no142 = scalar.constant 2 : i64
+  %blocks_143 = scf.select %is142, %nb142, %blocks_142 : i64
+  %kind_143 = scf.select %is142, %nk142, %kind_142 : i64
+  %inb_143 = scf.select %is142, %ni142, %inb_142 : i64
+  %outb_143 = scf.select %is142, %no142, %outb_142 : i64
+  %name143 = global.load @k143 : buffer
+  %is143 = func.call @same(%key, %name143) : (buffer, buffer) -> (i1)
+  %nb143 = scalar.constant 294912 : i64
+  %nk143 = scalar.constant 0 : i64
+  %ni143 = scalar.constant 4 : i64
+  %no143 = scalar.constant 2 : i64
+  %blocks_144 = scf.select %is143, %nb143, %blocks_143 : i64
+  %kind_144 = scf.select %is143, %nk143, %kind_143 : i64
+  %inb_144 = scf.select %is143, %ni143, %inb_143 : i64
+  %outb_144 = scf.select %is143, %no143, %outb_143 : i64
+  %name144 = global.load @k144 : buffer
+  %is144 = func.call @same(%key, %name144) : (buffer, buffer) -> (i1)
+  %nb144 = scalar.constant 147456 : i64
+  %nk144 = scalar.constant 0 : i64
+  %ni144 = scalar.constant 4 : i64
+  %no144 = scalar.constant 2 : i64
+  %blocks_145 = scf.select %is144, %nb144, %blocks_144 : i64
+  %kind_145 = scf.select %is144, %nk144, %kind_144 : i64
+  %inb_145 = scf.select %is144, %ni144, %inb_144 : i64
+  %outb_145 = scf.select %is144, %no144, %outb_144 : i64
+  %name145 = global.load @k145 : buffer
+  %is145 = func.call @same(%key, %name145) : (buffer, buffer) -> (i1)
+  %nb145 = scalar.constant 147456 : i64
+  %nk145 = scalar.constant 0 : i64
+  %ni145 = scalar.constant 4 : i64
+  %no145 = scalar.constant 2 : i64
+  %blocks_146 = scf.select %is145, %nb145, %blocks_145 : i64
+  %kind_146 = scf.select %is145, %nk145, %kind_145 : i64
+  %inb_146 = scf.select %is145, %ni145, %inb_145 : i64
+  %outb_146 = scf.select %is145, %no145, %outb_145 : i64
+  %name146 = global.load @k146 : buffer
+  %is146 = func.call @same(%key, %name146) : (buffer, buffer) -> (i1)
+  %nb146 = scalar.constant 294912 : i64
+  %nk146 = scalar.constant 0 : i64
+  %ni146 = scalar.constant 4 : i64
+  %no146 = scalar.constant 2 : i64
+  %blocks_147 = scf.select %is146, %nb146, %blocks_146 : i64
+  %kind_147 = scf.select %is146, %nk146, %kind_146 : i64
+  %inb_147 = scf.select %is146, %ni146, %inb_146 : i64
+  %outb_147 = scf.select %is146, %no146, %outb_146 : i64
+  %name147 = global.load @k147 : buffer
+  %is147 = func.call @same(%key, %name147) : (buffer, buffer) -> (i1)
+  %nb147 = scalar.constant 147456 : i64
+  %nk147 = scalar.constant 0 : i64
+  %ni147 = scalar.constant 4 : i64
+  %no147 = scalar.constant 2 : i64
+  %blocks_148 = scf.select %is147, %nb147, %blocks_147 : i64
+  %kind_148 = scf.select %is147, %nk147, %kind_147 : i64
+  %inb_148 = scf.select %is147, %ni147, %inb_147 : i64
+  %outb_148 = scf.select %is147, %no147, %outb_147 : i64
+  %name148 = global.load @k148 : buffer
+  %is148 = func.call @same(%key, %name148) : (buffer, buffer) -> (i1)
+  %nb148 = scalar.constant 147456 : i64
+  %nk148 = scalar.constant 0 : i64
+  %ni148 = scalar.constant 4 : i64
+  %no148 = scalar.constant 2 : i64
+  %blocks_149 = scf.select %is148, %nb148, %blocks_148 : i64
+  %kind_149 = scf.select %is148, %nk148, %kind_148 : i64
+  %inb_149 = scf.select %is148, %ni148, %inb_148 : i64
+  %outb_149 = scf.select %is148, %no148, %outb_148 : i64
+  %name149 = global.load @k149 : buffer
+  %is149 = func.call @same(%key, %name149) : (buffer, buffer) -> (i1)
+  %nb149 = scalar.constant 294912 : i64
+  %nk149 = scalar.constant 0 : i64
+  %ni149 = scalar.constant 4 : i64
+  %no149 = scalar.constant 2 : i64
+  %blocks_150 = scf.select %is149, %nb149, %blocks_149 : i64
+  %kind_150 = scf.select %is149, %nk149, %kind_149 : i64
+  %inb_150 = scf.select %is149, %ni149, %inb_149 : i64
+  %outb_150 = scf.select %is149, %no149, %outb_149 : i64
+  %name150 = global.load @k150 : buffer
+  %is150 = func.call @same(%key, %name150) : (buffer, buffer) -> (i1)
+  %nb150 = scalar.constant 147456 : i64
+  %nk150 = scalar.constant 0 : i64
+  %ni150 = scalar.constant 4 : i64
+  %no150 = scalar.constant 2 : i64
+  %blocks_151 = scf.select %is150, %nb150, %blocks_150 : i64
+  %kind_151 = scf.select %is150, %nk150, %kind_150 : i64
+  %inb_151 = scf.select %is150, %ni150, %inb_150 : i64
+  %outb_151 = scf.select %is150, %no150, %outb_150 : i64
+  %name151 = global.load @k151 : buffer
+  %is151 = func.call @same(%key, %name151) : (buffer, buffer) -> (i1)
+  %nb151 = scalar.constant 147456 : i64
+  %nk151 = scalar.constant 0 : i64
+  %ni151 = scalar.constant 4 : i64
+  %no151 = scalar.constant 2 : i64
+  %blocks_152 = scf.select %is151, %nb151, %blocks_151 : i64
+  %kind_152 = scf.select %is151, %nk151, %kind_151 : i64
+  %inb_152 = scf.select %is151, %ni151, %inb_151 : i64
+  %outb_152 = scf.select %is151, %no151, %outb_151 : i64
+  %name152 = global.load @k152 : buffer
+  %is152 = func.call @same(%key, %name152) : (buffer, buffer) -> (i1)
+  %nb152 = scalar.constant 294912 : i64
+  %nk152 = scalar.constant 0 : i64
+  %ni152 = scalar.constant 4 : i64
+  %no152 = scalar.constant 2 : i64
+  %blocks_153 = scf.select %is152, %nb152, %blocks_152 : i64
+  %kind_153 = scf.select %is152, %nk152, %kind_152 : i64
+  %inb_153 = scf.select %is152, %ni152, %inb_152 : i64
+  %outb_153 = scf.select %is152, %no152, %outb_152 : i64
+  %name153 = global.load @k153 : buffer
+  %is153 = func.call @same(%key, %name153) : (buffer, buffer) -> (i1)
+  %nb153 = scalar.constant 147456 : i64
+  %nk153 = scalar.constant 0 : i64
+  %ni153 = scalar.constant 4 : i64
+  %no153 = scalar.constant 2 : i64
+  %blocks_154 = scf.select %is153, %nb153, %blocks_153 : i64
+  %kind_154 = scf.select %is153, %nk153, %kind_153 : i64
+  %inb_154 = scf.select %is153, %ni153, %inb_153 : i64
+  %outb_154 = scf.select %is153, %no153, %outb_153 : i64
+  %name154 = global.load @k154 : buffer
+  %is154 = func.call @same(%key, %name154) : (buffer, buffer) -> (i1)
+  %nb154 = scalar.constant 147456 : i64
+  %nk154 = scalar.constant 0 : i64
+  %ni154 = scalar.constant 4 : i64
+  %no154 = scalar.constant 2 : i64
+  %blocks_155 = scf.select %is154, %nb154, %blocks_154 : i64
+  %kind_155 = scf.select %is154, %nk154, %kind_154 : i64
+  %inb_155 = scf.select %is154, %ni154, %inb_154 : i64
+  %outb_155 = scf.select %is154, %no154, %outb_154 : i64
+  %name155 = global.load @k155 : buffer
+  %is155 = func.call @same(%key, %name155) : (buffer, buffer) -> (i1)
+  %nb155 = scalar.constant 294912 : i64
+  %nk155 = scalar.constant 0 : i64
+  %ni155 = scalar.constant 4 : i64
+  %no155 = scalar.constant 2 : i64
+  %blocks_156 = scf.select %is155, %nb155, %blocks_155 : i64
+  %kind_156 = scf.select %is155, %nk155, %kind_155 : i64
+  %inb_156 = scf.select %is155, %ni155, %inb_155 : i64
+  %outb_156 = scf.select %is155, %no155, %outb_155 : i64
+  %name156 = global.load @k156 : buffer
+  %is156 = func.call @same(%key, %name156) : (buffer, buffer) -> (i1)
+  %nb156 = scalar.constant 294912 : i64
+  %nk156 = scalar.constant 0 : i64
+  %ni156 = scalar.constant 4 : i64
+  %no156 = scalar.constant 2 : i64
+  %blocks_157 = scf.select %is156, %nb156, %blocks_156 : i64
+  %kind_157 = scf.select %is156, %nk156, %kind_156 : i64
+  %inb_157 = scf.select %is156, %ni156, %inb_156 : i64
+  %outb_157 = scf.select %is156, %no156, %outb_156 : i64
+  %name157 = global.load @k157 : buffer
+  %is157 = func.call @same(%key, %name157) : (buffer, buffer) -> (i1)
+  %nb157 = scalar.constant 147456 : i64
+  %nk157 = scalar.constant 0 : i64
+  %ni157 = scalar.constant 4 : i64
+  %no157 = scalar.constant 2 : i64
+  %blocks_158 = scf.select %is157, %nb157, %blocks_157 : i64
+  %kind_158 = scf.select %is157, %nk157, %kind_157 : i64
+  %inb_158 = scf.select %is157, %ni157, %inb_157 : i64
+  %outb_158 = scf.select %is157, %no157, %outb_157 : i64
+  %name158 = global.load @k158 : buffer
+  %is158 = func.call @same(%key, %name158) : (buffer, buffer) -> (i1)
+  %nb158 = scalar.constant 147456 : i64
+  %nk158 = scalar.constant 0 : i64
+  %ni158 = scalar.constant 4 : i64
+  %no158 = scalar.constant 2 : i64
+  %blocks_159 = scf.select %is158, %nb158, %blocks_158 : i64
+  %kind_159 = scf.select %is158, %nk158, %kind_158 : i64
+  %inb_159 = scf.select %is158, %ni158, %inb_158 : i64
+  %outb_159 = scf.select %is158, %no158, %outb_158 : i64
+  %name159 = global.load @k159 : buffer
+  %is159 = func.call @same(%key, %name159) : (buffer, buffer) -> (i1)
+  %nb159 = scalar.constant 294912 : i64
+  %nk159 = scalar.constant 0 : i64
+  %ni159 = scalar.constant 4 : i64
+  %no159 = scalar.constant 2 : i64
+  %blocks_160 = scf.select %is159, %nb159, %blocks_159 : i64
+  %kind_160 = scf.select %is159, %nk159, %kind_159 : i64
+  %inb_160 = scf.select %is159, %ni159, %inb_159 : i64
+  %outb_160 = scf.select %is159, %no159, %outb_159 : i64
+  %name160 = global.load @k160 : buffer
+  %is160 = func.call @same(%key, %name160) : (buffer, buffer) -> (i1)
+  %nb160 = scalar.constant 147456 : i64
+  %nk160 = scalar.constant 0 : i64
+  %ni160 = scalar.constant 4 : i64
+  %no160 = scalar.constant 2 : i64
+  %blocks_161 = scf.select %is160, %nb160, %blocks_160 : i64
+  %kind_161 = scf.select %is160, %nk160, %kind_160 : i64
+  %inb_161 = scf.select %is160, %ni160, %inb_160 : i64
+  %outb_161 = scf.select %is160, %no160, %outb_160 : i64
+  %name161 = global.load @k161 : buffer
+  %is161 = func.call @same(%key, %name161) : (buffer, buffer) -> (i1)
+  %nb161 = scalar.constant 147456 : i64
+  %nk161 = scalar.constant 0 : i64
+  %ni161 = scalar.constant 4 : i64
+  %no161 = scalar.constant 2 : i64
+  %blocks_162 = scf.select %is161, %nb161, %blocks_161 : i64
+  %kind_162 = scf.select %is161, %nk161, %kind_161 : i64
+  %inb_162 = scf.select %is161, %ni161, %inb_161 : i64
+  %outb_162 = scf.select %is161, %no161, %outb_161 : i64
+  %name162 = global.load @k162 : buffer
+  %is162 = func.call @same(%key, %name162) : (buffer, buffer) -> (i1)
+  %nb162 = scalar.constant 294912 : i64
+  %nk162 = scalar.constant 0 : i64
+  %ni162 = scalar.constant 4 : i64
+  %no162 = scalar.constant 2 : i64
+  %blocks_163 = scf.select %is162, %nb162, %blocks_162 : i64
+  %kind_163 = scf.select %is162, %nk162, %kind_162 : i64
+  %inb_163 = scf.select %is162, %ni162, %inb_162 : i64
+  %outb_163 = scf.select %is162, %no162, %outb_162 : i64
+  %name163 = global.load @k163 : buffer
+  %is163 = func.call @same(%key, %name163) : (buffer, buffer) -> (i1)
+  %nb163 = scalar.constant 147456 : i64
+  %nk163 = scalar.constant 0 : i64
+  %ni163 = scalar.constant 4 : i64
+  %no163 = scalar.constant 2 : i64
+  %blocks_164 = scf.select %is163, %nb163, %blocks_163 : i64
+  %kind_164 = scf.select %is163, %nk163, %kind_163 : i64
+  %inb_164 = scf.select %is163, %ni163, %inb_163 : i64
+  %outb_164 = scf.select %is163, %no163, %outb_163 : i64
+  %name164 = global.load @k164 : buffer
+  %is164 = func.call @same(%key, %name164) : (buffer, buffer) -> (i1)
+  %nb164 = scalar.constant 147456 : i64
+  %nk164 = scalar.constant 0 : i64
+  %ni164 = scalar.constant 4 : i64
+  %no164 = scalar.constant 2 : i64
+  %blocks_165 = scf.select %is164, %nb164, %blocks_164 : i64
+  %kind_165 = scf.select %is164, %nk164, %kind_164 : i64
+  %inb_165 = scf.select %is164, %ni164, %inb_164 : i64
+  %outb_165 = scf.select %is164, %no164, %outb_164 : i64
+  %name165 = global.load @k165 : buffer
+  %is165 = func.call @same(%key, %name165) : (buffer, buffer) -> (i1)
+  %nb165 = scalar.constant 294912 : i64
+  %nk165 = scalar.constant 0 : i64
+  %ni165 = scalar.constant 4 : i64
+  %no165 = scalar.constant 2 : i64
+  %blocks_166 = scf.select %is165, %nb165, %blocks_165 : i64
+  %kind_166 = scf.select %is165, %nk165, %kind_165 : i64
+  %inb_166 = scf.select %is165, %ni165, %inb_165 : i64
+  %outb_166 = scf.select %is165, %no165, %outb_165 : i64
+  %name166 = global.load @k166 : buffer
+  %is166 = func.call @same(%key, %name166) : (buffer, buffer) -> (i1)
+  %nb166 = scalar.constant 147456 : i64
+  %nk166 = scalar.constant 0 : i64
+  %ni166 = scalar.constant 4 : i64
+  %no166 = scalar.constant 2 : i64
+  %blocks_167 = scf.select %is166, %nb166, %blocks_166 : i64
+  %kind_167 = scf.select %is166, %nk166, %kind_166 : i64
+  %inb_167 = scf.select %is166, %ni166, %inb_166 : i64
+  %outb_167 = scf.select %is166, %no166, %outb_166 : i64
+  %name167 = global.load @k167 : buffer
+  %is167 = func.call @same(%key, %name167) : (buffer, buffer) -> (i1)
+  %nb167 = scalar.constant 147456 : i64
+  %nk167 = scalar.constant 0 : i64
+  %ni167 = scalar.constant 4 : i64
+  %no167 = scalar.constant 2 : i64
+  %blocks_168 = scf.select %is167, %nb167, %blocks_167 : i64
+  %kind_168 = scf.select %is167, %nk167, %kind_167 : i64
+  %inb_168 = scf.select %is167, %ni167, %inb_167 : i64
+  %outb_168 = scf.select %is167, %no167, %outb_167 : i64
+  %found = scalar.cmpi ne, %blocks_168, %zero : i64
+  %bytes = scf.if %found -> (i64) {
+    %source = scalar.constant 0 : i32
+    %align = scalar.constant 256 : i64
+    %length = scalar.muli %blocks_168, %inb_168 : i64
+    %key_bytes = buffer.length %key
+    %key_length = index.cast %key_bytes : offset to i64
+    %first = func.call @input(%source, %key, %zero, %key_length, %zero, %length, %align) : (i32, buffer, i64, i64, i64, i64, i64) -> (i64)
+    %want0 = scalar.constant 0 : i64
+    %this0 = scalar.cmpi eq, %kind_168, %want0 : i64
+    scf.if %this0 {
+      %root0 = global.load @root0 : buffer
+      %stage0 = func.call @stage(%root0, %zero) : (buffer, i64) -> (i32)
+      %bk0 = global.load @blocks_key : buffer
+      %ik0 = global.load @input_key : buffer
+      func.call @config_i64(%stage0, %bk0, %blocks_168) : (i32, buffer, i64)
+      func.call @config_i64(%stage0, %ik0, %first) : (i32, buffer, i64)
+    }
+    %prepared = scalar.muli %blocks_168, %outb_168 : i64
+    scf.yield %prepared : i64
+  } else {
+    scf.yield %zero : i64
+  }
   func.return %bytes : i64
 }

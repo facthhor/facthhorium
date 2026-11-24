@@ -113,7 +113,8 @@ def model_status(path):
 
 
 def warmup(path):
-    with contextlib.closing(UnixHTTPConnection(path, timeout=120)) as connection:
+    # The first launch compiles the program for the GPU, which can take several minutes.
+    with contextlib.closing(UnixHTTPConnection(path, timeout=900)) as connection:
         payload = {
             "model": MODEL_ID,
             "messages": [{"role": "user", "content": "What is 17 plus 25? Answer with the number only."}],

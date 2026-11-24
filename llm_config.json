@@ -1,7 +1,7 @@
 {
   "name": "Inkling-2-Mini",
   "arch": "inkling2",
-  "gguf": "Inkling-2-Mini-UD-Q4_K_M.gguf",
+  "gguf": "Inkling-2-Mini-UD-Q4_K_XL.gguf",
   "hidden": 2304,
   "layers": 48,
   "heads": 24,
@@ -185,8 +185,27 @@
     "gate_up_fused": true,
     "down_scale": true
   },
+  "sampling": {
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 0,
+    "min_p": 0.0
+  },
   "model_id": "inkling-2-facthhorium",
-  "draft": null,
+  "draft": {
+    "kind": "dflash",
+    "depth": 3,
+    "gguf": "dspark-Inkling-2-Mini-Q8_0.gguf",
+    "layers": 3,
+    "kv_heads": 8,
+    "head_dim": 128,
+    "taps": 4,
+    "block_size": 8,
+    "dspark_inkling2": true,
+    "kv_layers": 1,
+    "carry_stride": 8404992,
+    "head_policy": "head_weights.loom"
+  },
   "generator": {
     "skills_commit": "unknown",
     "dirty": null,
@@ -194,10 +213,7 @@
       "example": null,
       "modified": true
     },
-    "hrx_loom": "unknown",
-    "dirty_choices": [
-      "moe.decode.rows_per_wg"
-    ]
+    "hrx_loom": "unknown"
   },
   "sdk": {
     "hrx_loom": "0.2.0",
@@ -207,6 +223,7 @@
   },
   "resolved": {
     "scopes": [
+      "facet/drafted",
       "facet/moe",
       "facet/sliding-window"
     ],
@@ -216,6 +233,8 @@
       "rdna4"
     ],
     "facets": [
+      "draft-dflash",
+      "drafted",
       "gated-attn",
       "moe",
       "sliding-window"

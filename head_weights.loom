@@ -1,0 +1,94 @@
+// Weight policy (the proposal head; draft/prep_weights.py): the listed tensors of the published checkpoint are staged and
+// converted at load by llm_prep_<src>_<dst> (llm.loom); every other tensor keeps its file bytes. No converted
+// checkpoint is written or published.
+
+func.decl import("weights") @input(%source: i32, %key: buffer, %key_offset: i64, %key_length: i64, %offset: i64, %length: i64, %alignment: i64) -> (i64)
+
+func.decl import("prepare") @stage(%root: buffer, %tag: i64) -> (i32)
+
+func.decl import("prepare") @config_i64(%stage: i32, %key: buffer, %value: i64)
+
+global.rodata.def @root0 = bytes("6c6c6d5f707265705f71385f30675f71345f3073")
+
+global.rodata.def @split_key = bytes("6c6c6d2e707265705f73706c6974")
+
+global.rodata.def @skip_key = bytes("6c6c6d2e707265705f736b6970")
+
+global.rodata.def @blocks_key = bytes("6c6c6d2e707265705f626c6f636b73")
+
+global.rodata.def @input_key = bytes("6c6c6d2e707265705f696e707574")
+
+// "output.weight"
+global.rodata.def @k0 = bytes("6f75747075742e776569676874")
+
+func.def @same(%key: buffer, %name: buffer) -> (i1) {
+  %a = buffer.length %key
+  %b = buffer.length %name
+  %sized = index.cmp eq, %a, %b : offset
+  %result = scf.if %sized -> (i1) {
+    %o = index.constant 0 : offset
+    %order = buffer.compare %key[%o], %name[%o], %b
+    %z = scalar.constant 0 : i32
+    %same = scalar.cmpi eq, %order, %z : i32
+    scf.yield %same : i1
+  } else {
+    %no = scalar.constant false : i1
+    scf.yield %no : i1
+  }
+  func.return %result : i1
+}
+
+func.def public @prepare_weight(%key: buffer) -> (i64) {
+  %zero = scalar.constant 0 : i64
+  %blocks_0 = scalar.constant 0 : i64
+  %kind_0 = scalar.constant 0 : i64
+  %inb_0 = scalar.constant 0 : i64
+  %outb_0 = scalar.constant 0 : i64
+  %len_0 = scalar.constant 0 : i64
+  %split_0 = scalar.constant 0 : i64
+  %skip_0 = scalar.constant 0 : i64
+  %name0 = global.load @k0 : buffer
+  %is0 = func.call @same(%key, %name0) : (buffer, buffer) -> (i1)
+  %nb0 = scalar.constant 4718592 : i64
+  %nk0 = scalar.constant 0 : i64
+  %ni0 = scalar.constant 272 : i64
+  %no0 = scalar.constant 18 : i64
+  %blocks_1 = scf.select %is0, %nb0, %blocks_0 : i64
+  %kind_1 = scf.select %is0, %nk0, %kind_0 : i64
+  %inb_1 = scf.select %is0, %ni0, %inb_0 : i64
+  %outb_1 = scf.select %is0, %no0, %outb_0 : i64
+  %nl0 = scalar.constant 489741984 : i64
+  %nsp0 = scalar.constant 65536 : i64
+  %nsk0 = scalar.constant 72 : i64
+  %len_1 = scf.select %is0, %nl0, %len_0 : i64
+  %split_1 = scf.select %is0, %nsp0, %split_0 : i64
+  %skip_1 = scf.select %is0, %nsk0, %skip_0 : i64
+  %found = scalar.cmpi ne, %blocks_1, %zero : i64
+  %bytes = scf.if %found -> (i64) {
+    %source = scalar.constant 0 : i32
+    %align = scalar.constant 256 : i64
+    %length = scalar.addi %len_1, %zero : i64
+    %key_bytes = buffer.length %key
+    %key_length = index.cast %key_bytes : offset to i64
+    %first = func.call @input(%source, %key, %zero, %key_length, %zero, %length, %align) : (i32, buffer, i64, i64, i64, i64, i64) -> (i64)
+    %want0 = scalar.constant 0 : i64
+    %this0 = scalar.cmpi eq, %kind_1, %want0 : i64
+    scf.if %this0 {
+      %root0 = global.load @root0 : buffer
+      %stage0 = func.call @stage(%root0, %zero) : (buffer, i64) -> (i32)
+      %bk0 = global.load @blocks_key : buffer
+      %ik0 = global.load @input_key : buffer
+      func.call @config_i64(%stage0, %bk0, %blocks_1) : (i32, buffer, i64)
+      func.call @config_i64(%stage0, %ik0, %first) : (i32, buffer, i64)
+      %spk0 = global.load @split_key : buffer
+      %skk0 = global.load @skip_key : buffer
+      func.call @config_i64(%stage0, %spk0, %split_1) : (i32, buffer, i64)
+      func.call @config_i64(%stage0, %skk0, %skip_1) : (i32, buffer, i64)
+    }
+    %prepared = scalar.muli %blocks_1, %outb_1 : i64
+    scf.yield %prepared : i64
+  } else {
+    scf.yield %zero : i64
+  }
+  func.return %bytes : i64
+}

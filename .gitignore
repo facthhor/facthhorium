@@ -2,4 +2,4 @@
 /tokenizer.json
 /parameter/*.gguf
 /__pycache__/
-/runtime/
+/runtime

@@ -92,7 +92,7 @@
       "programs": "source",
       "execution": {
         "rows": 1,
-        "context_capacity": 131072,
+        "context_capacity": 204800,
         "prefill_capacity": 4096,
         "max_tokens": 4096,
         "draft_depth": 3

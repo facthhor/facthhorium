@@ -2,12 +2,13 @@
 
 Facthhorium runs Inkling 2 Mini on AMD GPUs with Loom. It was tested on the Radeon 8060S (gfx1151).
 
-v0.3 moves Facthhorium onto loom-fun's DSpark package, so decode uses Inkling's own drafter (speculative decoding at depth 3). It also switches to the UD-Q4_K_XL weights. The KV cache stays FP16. On a 32 GB machine the context is capped at 131,072 tokens. Compressing the global KV cache, which would raise that cap, is still in development. For longer contexts, v0.2.1 serves 204,800 tokens on UD-Q4_K_M without a drafter.
+This is the v0.4 preview. It stores the KV cache of the eight global attention layers as Q8, which raises the context cap from 131,072 to 204,800 tokens on a 32 GB machine. Everything else is v0.3.0: loom-fun's DSpark drafter at depth 3, the UD-Q4_K_XL weights, the sampler, vision, the relay and the Pi extension. **v0.3.0 remains the stable release.**
 
 - At temperature 1, top-k 0 and top-p 1, the sampler draws from all 200,058 tokens. It sums probability mass across 32 GPU workgroups.
 - Single-token decode spreads the output-head work across 96 GPU lanes and the attention maximum reduction across 32 lanes.
 - The tool parser skips the argument body until a call is complete. Stray bytes after a complete call's JSON no longer fail the turn. The HTTP relay sends a keepalive every 15 seconds of silence and reports interrupted streams without replaying partial tool calls.
 - The vision path accepts images using the Inkling FP16 projector.
+- The eight global attention layers store K and V as int8 values with one FP16 scale per 32 values: 17 KiB per token instead of 32 KiB. The sliding-window rings and the drafter cache stay FP16.
 - The drafter proposes 3 tokens per step. The target verifies them with the same full-vocabulary sampler. Set `presets.chat.execution.draft_depth` to 0 in `facthhorium.json` to run the target alone. At depth 3, greedy output can drift from depth 0 within a few hundred characters because verification computes in batches. Both settings repeat exactly for the same request.
 
 ## Computer use
@@ -40,6 +41,16 @@ Start the server on a loopback port (the caller, such as llama-swap, supplies th
 ```
 
 By default, logs are written to `logs/` beside the server. Set `FACTHHORIUM_LOG_DIR` to change the directory. Relay diagnostics and timing records use `llama-server.log`; Loom stderr uses `facthhorium-loom-serve.log`. For rati0’s speed card, set `FACTHHORIUM_LOG_DIR="$HOME/.local/share/ai-workspace/logs"` in the launcher environment.
+
+## v0.4 preview notes
+
+Greedy output at draft depth 3 was compared with an FP16 build that rounds every stored K and V value to the same Q8 grid, so any difference comes from the Q8 code paths rather than from rounding. 44 of 45 short prompts (26 chat, 14 math, 5 code, 512 tokens each) produced identical output. The remaining math prompt diverges at a near-tie after 317 tokens. The verbatim-copy test (one quoted line of Rust source, six lines to copy, ten greedy probes each at 50,084 and 95,746 input tokens) returned 120 of 120 lines. Earlier Q8 builds returned 92 of 120.
+
+The fix behind this preview: speculative verification reads whole 16-position pages and masks the positions after the last query. Those slots have not been written by the current request. When the runtime reassigns released KV memory it does not clear it, and because a Q8 page (34,816 bytes) does not line up with the memory pages, the stale bytes can decode as Inf or NaN scales. A zero attention weight times Inf is NaN, which silently zeroed parts of the attention output and flipped close token choices. The span readers now set the value scale of every masked position to zero.
+
+The quality gate passed at temperature 1, top-k 0, top-p 1 and maximum effort: 14/14 math problems, 5/5 code problems, 4/4 vision checks (including a 16-image request), 1/1 tool call, and all 52 retrieval facts at 9,261, 36,694, 73,000 and 142,855 input tokens. A repeated greedy request at 36,694 tokens produced identical output. GPU memory (GTT) peaked at 23.8 GiB with 142,855 input tokens, with 3.6 GiB of system memory still available. Each additional token adds about 21 KiB. Near the cap, at 192,249 input tokens, all 12 retrieval facts were found and GTT peaked at 24.2 GiB with 3.3 GiB available (that session did not load the image projector, which adds about 0.6 GiB). A 204,007-token request with the shipped card peaked at 24.7 GiB with 2.7 GiB available.
+
+The fix adds one select per value load. A short same-session comparison showed no decode slowdown (57.3 vs 57.5 tok/s median over ten prompts); decode speeds were not otherwise re-measured for this preview. Tested only on gfx1151.
 
 ## v0.3 measurements
 

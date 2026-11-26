@@ -1,4 +1,5 @@
-// KV geometry: 16 planes (K and V per attention layer) of pool x 2048 bytes (F16 KV heads x head_dim).
+// Each of the eight global layers owns a plane of 16-position pages.
+// A page contains K then V. Each Q8 payload has a separate contiguous array of F16 scales.
 // Recurrent slots: 174227456 bytes each (gated delta-net state of every recurrent layer; 4 = none).
 // logits:begin
 // A declaration: the one definition (default false) is in llm.loom; a second config.def of the key links ambiguously (LINK/MATERIALIZE).
@@ -48,8 +49,8 @@ func.def public @llm_storage(%maximum: i64, %span_capacity: i64, %context: i64, 
   %fork_slots = scalar.addi %twice_rows, %pins : i64
   %slots = scf.select %pinned, %fork_slots, %rows : i64
   %private_bytes = scalar.muli %slots, %row_stride : i64
-  %kv_position_bytes = scalar.constant 2048 : i64
-  %plane_count = scalar.constant 16 : i64
+  %kv_position_bytes = scalar.constant 2176 : i64
+  %plane_count = scalar.constant 8 : i64
   %plane_bytes = scalar.muli %pool, %kv_position_bytes : i64
   %pool_bytes = scalar.muli %plane_bytes, %plane_count : i64
   %biased_pool = scalar.addi %pool_bytes, %alignment_bias : i64
@@ -188,7 +189,7 @@ func.def public @llm_storage(%maximum: i64, %span_capacity: i64, %context: i64, 
   view.store %c0_i64, %geometry_view[9] : i64, view<13xi64>
   view.store %plane_count, %geometry_view[10] : i64, view<13xi64>
   view.store %plane_bytes, %geometry_view[11] : i64, view<13xi64>
-  %block_bytes = scalar.constant 32768 : i64
+  %block_bytes = scalar.constant 34816 : i64
   view.store %block_bytes, %geometry_view[12] : i64, view<13xi64>
   // second cache region: the drafter's K/V planes (allocation 9), same page geometry
   %draft_origins = scf.if %on -> (buffer) {
